@@ -34,7 +34,7 @@ class FrankWolfeAssignment {
                        std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile,
                        const bool verbose = true)
       : allOrNothingAssignment(graph, odPairs, verbose),
-        inputGraph(graph),
+        inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
         trafficFlows(graph.numEdges()),
         travelCostFunction(graph),
         objFunction(travelCostFunction),
@@ -43,6 +43,9 @@ class FrankWolfeAssignment {
         patternFile(patternFile),
         verbose(verbose) {
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
+
+	/*FORALL_EDGES(inputGraph, e)
+	  std::cout << inputGraph.edgeTail(e) << " " << inputGraph.edgeHead(e) <<  " " << inputGraph.capacity(e) << std::endl;*/
   }
 
   // Assigns all OD-flows onto the input graph.
@@ -109,8 +112,16 @@ class FrankWolfeAssignment {
         distanceFile << substats.numIterations << ',' << dist << '\n';
 
     if (patternFile.is_open())
-      for (const auto flow : trafficFlows)
-        patternFile << substats.numIterations << ',' << flow << '\n';
+		FORALL_EDGES(inputGraph, e)
+		{
+			const int tail = inputGraph.edgeTail(e);
+			const int head = inputGraph.edgeHead(e);
+			const auto flow = trafficFlows[e];
+			
+			patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
+		}
+	
+	
 
     if (verbose) {
       std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
@@ -211,8 +222,17 @@ class FrankWolfeAssignment {
           distanceFile << substats.numIterations << ',' << dist << '\n';
 
       if (patternFile.is_open())
-        for (const auto flow : trafficFlows)
-          patternFile << substats.numIterations << ',' << flow << '\n';
+		  // kiril modified this in order to read 
+		  //for (const auto flow : trafficFlows)
+		  FORALL_EDGES(inputGraph, e)
+		  {
+			  const int tail = inputGraph.edgeTail(e);
+			  const int head = inputGraph.edgeHead(e);
+			  const auto flow = trafficFlows[e];
+			
+			  patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
+		  }
+	  
 
       if (verbose) {
         std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
@@ -254,6 +274,7 @@ class FrankWolfeAssignment {
 
   AllOrNothing allOrNothingAssignment;   // The all-or-nothing assignment algo used as a subroutine.
   InputGraphT& inputGraph;               // The input graph.
+	// InputGraphT inputGraphReversed;        // Reversed input graph (needed to get edge tails)
   AlignedVector<double> trafficFlows;    // The traffic flows on the edges.
   TravelCostFunction travelCostFunction; // A functor returning the travel cost on an edge.
   ObjFunction objFunction;               // The objective function to be minimized (UE or SO).

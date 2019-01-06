@@ -198,6 +198,14 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     return edgeHeads[e];
   }
 
+  // Returns the head vertex of edge e.
+  int edgeTail(const int e) const {
+    assert(e >= 0); assert(e < edgeTails.size()); assert(isValidEdge(e));
+    return edgeTails[e];
+  }
+
+  
+
   // Returns the value of the attribute Attr for the vertex/edge with index idx.
   template <typename Attr>
   const typename Attr::Type& get(const int idx) const {
@@ -242,6 +250,8 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     RUN_FORALL(VertexAttributes::reserve(numVertices));
 
     edgeHeads.reserve(numEdges);
+	edgeTails.reserve(numEdges);
+	
     RUN_FORALL(EdgeAttributes::reserve(numEdges));
   }
 
@@ -386,6 +396,13 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     assert(v >= 0); assert(v < numVertices());
     edgeHeads[e] = v;
   }
+
+  // Sets the head of edge e to vertex v.
+  void setEdgeTail(const int e, const int v) {
+    assert(e >= 0); assert(e <= maxEdgeIndex());
+    assert(v >= 0); assert(v < numVertices());
+    edgeTails[e] = v;
+ } 
 
   // Removes all vertices and edges from the graph.
   void clear() {
@@ -644,8 +661,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     assert(im.numVertices() == 0 || numVertices() == im.numVertices());
 
     // Read the edges, one after another. The edges don't have to be in any particular order.
-    std::vector<int> edgeTails;
-    edgeTails.reserve(im.numEdges());
+    //std::vector<int> edgeTails;
     bool edgesSorted = true; // Indicates if the edges are already sorted by tail ID.
     int prevTailId = -1; // The tail ID of the previous edge.
     while (im.nextEdge()) {
@@ -716,7 +732,8 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     }
     outEdges.back().last() = edgeCount;
     bio::read(in, edgeHeads);
-
+	bio::read(in, edgeTails);
+	
     // Fill the values of the vertex attributes.
     int numVertexAttrs;
     bio::read(in, numVertexAttrs);
@@ -766,6 +783,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     for (int v = 1; v < numVertices(); ++v)
       bio::write(out, outEdges[v].first());
     bio::write(out, edgeHeads);
+	bio::write(out, edgeTails);
 
     // Write the vertex attributes.
     int numVertexAttrs = 0;
@@ -894,11 +912,14 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
   void permuteEdges(const Permutation& perm) {
     assert(perm.validate());
     perm.applyTo(edgeHeads);
+	perm.applyTo(edgeTails);
+	
     RUN_FORALL(perm.applyTo(EdgeAttributes::values));
   }
 
   AlignedVector<OutEdgeRange> outEdges; // The ranges of outgoing edges of the vertices.
   AlignedVector<int32_t> edgeHeads;     // The head vertices of the edges.
+  AlignedVector<int32_t> edgeTails;
 
   int edgeCount; // The number of edges in the graph.
 };

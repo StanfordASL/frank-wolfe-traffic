@@ -29,6 +29,7 @@
 #include "DataStructures/Graph/Import/OsmImporter.h"
 #include "DataStructures/Graph/Import/VisumImporter.h"
 #include "DataStructures/Graph/Import/XatfImporter.h"
+#include "DataStructures/Graph/Import/CsvImporter.h"
 #include "Tools/CommandLine/CommandLineParser.h"
 #include "Tools/ContainerHelpers.h"
 
@@ -47,7 +48,7 @@ void printUsage() {
       "This program converts a graph from a source file format to a destination format,\n"
       "possibly extracting the largest strongly connected component of the input graph.\n"
       "  -s <fmt>          source file format\n"
-      "                      possible values: binary default dimacs osm visum xatf\n"
+      "                      possible values: binary default dimacs osm visum xatf csv\n"
       "  -d <fmt>          destination file format\n"
       "                      possible values: binary default dimacs\n"
       "  -c                compress the output file(s), if available\n"
@@ -55,7 +56,7 @@ void printUsage() {
       "  -scc              extract the largest strongly connected component\n"
       "  -ts <sys>         the system whose network is to be imported (Visum only)\n"
       "  -cs <epsg-code>   input coordinate system (Visum only)\n"
-      "  -ap <hrs>         analysis period, capacity is in vehicles/AP (Visum only)\n"
+      "  -ap <hrs>         analysis period, capacity is in vehicles/AP (Visum and Csv only)\n"
       "  -a <attrs>        blank-separated list of vertex/edge attributes to be output\n"
       "                      possible values:\n"
       "                        capacity coordinate free_flow_speed lat_lng length\n"
@@ -89,6 +90,13 @@ GraphT importGraph(const CommandLineParser& clp) {
       throw std::invalid_argument(what);
     }
     return GraphT(infile, VisumImporter(infile, sys, crs, ap));
+  } else if (fmt == "csv") {
+    const int ap = clp.getValue<int>("ap", 24);
+    if (ap <= 0) {
+      const auto what = "analysis period not strictly positive -- '" + std::to_string(ap) + "'";
+      throw std::invalid_argument(what);
+    }
+    return GraphT(infile, CsvImporter(infile, ap));	
   } else if (fmt == "xatf") {
     return GraphT(infile, XatfImporter());
   } else {
@@ -115,7 +123,9 @@ void exportGraph(const CommandLineParser& clp, const GraphT& graph) {
   // Pick the appropriate export procedure.
   if (fmt == "binary") {
     const std::string outfile = clp.getValue<std::string>("o");
-    std::ofstream out(outfile + ".gr.bin", std::ios::binary);
+	// TODO: kiril was here
+    // std::ofstream out(outfile + ".gr.bin", std::ios::binary);
+	std::ofstream out(outfile + ".gr.bin");
     if (!out.good())
       throw std::invalid_argument("file cannot be opened -- '" + outfile + ".gr.bin'");
     // Output only those attributes specified on the command line.
