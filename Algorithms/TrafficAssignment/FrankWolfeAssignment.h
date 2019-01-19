@@ -120,8 +120,6 @@ class FrankWolfeAssignment {
 			
 			patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
 		}
-	
-	
 
     if (verbose) {
       std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
@@ -221,7 +219,8 @@ class FrankWolfeAssignment {
         for (const auto dist : substats.lastDistances)
           distanceFile << substats.numIterations << ',' << dist << '\n';
 
-      if (patternFile.is_open())
+      //if (patternFile.is_open() && (substats.numIterations == numIterations - 1))
+	  if (patternFile.is_open())
 		  // kiril modified this in order to read 
 		  //for (const auto flow : trafficFlows)
 		  FORALL_EDGES(inputGraph, e)

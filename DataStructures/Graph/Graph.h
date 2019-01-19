@@ -115,8 +115,17 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
   }
 
   // Constructs a graph from a binary file.
-  explicit Graph(std::ifstream& in) {
-    readFrom(in);
+  // dummy and exogenous are necessary only in the CustomBprFunction
+  explicit Graph(std::ifstream& in, const int dummy = 1351, const double exogenous = 0.0): dummy_id(dummy), exo(exogenous) {
+	  readFrom(in);
+	  realEdges.reserve(numEdges());
+	  for (int e = 0; e < numEdges(); e++)
+	  {
+		  if (edgeHead(e)!= dummy_id)
+			  realEdges.push_back(1.0);
+		  else
+			  realEdges.push_back(0.0);
+	  }
   }
 
   // Converts an arbitrary source graph into in arbitrary destination graph. Attributes associated
@@ -198,13 +207,28 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     return edgeHeads[e];
   }
 
+  int dummyId() const
+  {
+	  return dummy_id;
+  }
+
+  double exogenous() const
+  {
+	  return exo;
+  }
+
   // Returns the head vertex of edge e.
   int edgeTail(const int e) const {
     assert(e >= 0); assert(e < edgeTails.size()); assert(isValidEdge(e));
     return edgeTails[e];
   }
 
-  
+  // Returns 1.0 if edge real, 0.0 otherwise
+  const double& edgeReal(const int e) const
+  {
+	  assert(e >= 0); assert(e < edgeTails.size()); 
+	  return realEdges[e];
+  }
 
   // Returns the value of the attribute Attr for the vertex/edge with index idx.
   template <typename Attr>
@@ -920,8 +944,12 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
   AlignedVector<OutEdgeRange> outEdges; // The ranges of outgoing edges of the vertices.
   AlignedVector<int32_t> edgeHeads;     // The head vertices of the edges.
   AlignedVector<int32_t> edgeTails;
+  AlignedVector<double> realEdges; // array of 0.0 and 1.0 value indicating if edges are pointing to real edges or not
 
   int edgeCount; // The number of edges in the graph.
+
+  int dummy_id; // id of dummy vertex
+  double exo; // exogenous flow
 };
 
 // Write a textual representation to the specified output stream.

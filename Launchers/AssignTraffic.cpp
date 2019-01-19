@@ -20,6 +20,8 @@
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/SystemOptimum.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/DavidsonFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/InverseFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedDavidsonFunction.h"
@@ -45,7 +47,7 @@ void printUsage() {
       "  -n <num>          the number of iterations (0 means use stopping criterion)\n"
       "  -f <func>         the travel cost function\n"
       "                      possible values:\n"
-      "                        bpr davidson modified_davidson (default) inverse\n"
+      "                        bpr modified_bpr custom_bpr davidson modified_davidson (default) inverse\n"
       "  -a <algo>         the shortest-path algorithm\n"
       "                      possible values: dijkstra (default) bidijkstra ch cch\n"
       "  -ord <order>      the order of the OD-pairs\n"
@@ -58,7 +60,9 @@ void printUsage() {
       "  -o <file>         the output CSV file without file extension\n"
       "  -dist <file>      output the OD-distances after each iteration in <file>\n"
       "  -fp <file>        output the flow pattern after each iteration in <file>\n"
-      "  -help             display this help and exit\n";
+	  "  -exo <exo_flow>   value of exogenoes flow (only for custom_bpr)\n"
+	  "  -dummy <dummy_id> value of dummy id (only for custom_bpr)\n"
+      "  -help             display this help and exit\n";  
 }
 
 // An active vertex during a DFS, i.e., a vertex that has been reached but not finished.
@@ -167,11 +171,13 @@ void assignTraffic(const CommandLineParser& clp) {
   const std::string ord = clp.getValue<std::string>("ord", "input");
   const int maxDiam = clp.getValue<int>("U", 40);
   const double period = clp.getValue<double>("p", 1);
+  const int dummy_id = clp.getValue<int>("dummy",1351);
+  const double exogenous = clp.getValue<double>("exo",0.0);
 
   std::ifstream in(infilename, std::ios::binary);
   if (!in.good())
     throw std::invalid_argument("file not found -- '" + infilename + "'");
-  typename FrankWolfeAssignmentT::InputGraph graph(in);
+  typename FrankWolfeAssignmentT::InputGraph graph(in, dummy_id, exogenous);
   in.close();
 
   int id = 0;
@@ -301,6 +307,16 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
   const std::string func = clp.getValue<std::string>("f", "modified_davidson");
   if (func == "bpr")
     chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
+  else if (func == "modified_bpr")
+  {  
+	chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
+    std::cout << "modified BPR is used!" << std::endl;
+  }
+  else if (func == "custom_bpr")
+  {
+	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
+	  std::cout << "custom BPR is used!" << std::endl;
+  }
   else if (func == "davidson")
     chooseShortestPathAlgo<ObjFunctionT, DavidsonFunction>(clp);
   else if (func == "modified_davidson")

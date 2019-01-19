@@ -2,6 +2,10 @@
 
 #include <vectorclass/vectorclass.h>
 
+#define APT 3.0 // Global linearization point
+#define XTH 1.2
+#define XEND 2
+
 // The BPR travel cost function, relating the travel time on an edge to the flow on this edge.
 template <typename GraphT>
 class BprFunction {
