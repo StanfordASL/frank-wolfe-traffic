@@ -113,8 +113,8 @@ class FrankWolfeAssignment {
 
     if (patternFile.is_open())
 		FORALL_EDGES(inputGraph, e)
-		{
-			const int tail = inputGraph.edgeTail(e);
+		{			
+			const int tail = inputGraph.edgeTail_z(e);
 			const int head = inputGraph.edgeHead(e);
 			const auto flow = trafficFlows[e];
 			
@@ -225,7 +225,7 @@ class FrankWolfeAssignment {
 		  //for (const auto flow : trafficFlows)
 		  FORALL_EDGES(inputGraph, e)
 		  {
-			  const int tail = inputGraph.edgeTail(e);
+			  const int tail = inputGraph.edgeTail_z(e);
 			  const int head = inputGraph.edgeHead(e);
 			  const auto flow = trafficFlows[e];
 			

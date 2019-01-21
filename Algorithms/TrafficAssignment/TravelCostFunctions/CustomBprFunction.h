@@ -4,11 +4,11 @@
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
 
 // The BPR travel cost function, relating the travel time on an edge to the flow on this edge.
-template <typename GraphT>
+template <typename GraphTT>
 class CustomBprFunction {
  public:
   // Constructs a BPR function.
-	CustomBprFunction(const GraphT& graph) : graph(graph), bpr(graph) {
+	CustomBprFunction(const GraphTT& graph) : graph(graph), bpr(graph) {
 		exo = graph.exogenous();
 		dummy_id = graph.dummyId();
 		exo_v = Vec4d(exo);
@@ -102,8 +102,8 @@ class CustomBprFunction {
   }
 
  private:
-	const GraphT& graph; // The graph on whose edges we operate.
-	BprFunction<GraphT> bpr; // The original BPR function.
+	const GraphTT& graph; // The graph on whose edges we operate.
+	BprFunction<GraphTT> bpr; // The original BPR function.
 	double exo;
 	int dummy_id;
 	Vec4d exo_v;

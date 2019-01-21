@@ -102,7 +102,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
       AlignedVector<OutEdgeRange>&& outEdges, AlignedVector<int32_t>&& edgeHeads, int edgeCount,
       AlignedVector<typename VertexAttributes::Type>&& ...vertexAttrs,
       AlignedVector<typename EdgeAttributes::Type>&& ...edgeAttrs)
-      : outEdges(std::move(outEdges)), edgeHeads(std::move(edgeHeads)), edgeCount(edgeCount) {
+      : outEdges(std::move(outEdges)), edgeHeads(std::move(edgeHeads)), edgeTails(std::move(edgeTails)), edgeCount(edgeCount) {
     RUN_FORALL(VertexAttributes::values = std::move(vertexAttrs));
     RUN_FORALL(EdgeAttributes::values = std::move(edgeAttrs));
     assert(validate());
@@ -122,9 +122,13 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
 	  for (int e = 0; e < numEdges(); e++)
 	  {
 		  if (edgeHead(e)!= dummy_id)
+		  {
 			  realEdges.push_back(1.0);
-		  else
+			  fakeEdges.push_back(0.0);
+		  } else {
 			  realEdges.push_back(0.0);
+			  fakeEdges.push_back(1.0);
+		  }
 	  }
   }
 
@@ -140,6 +144,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     assert(dynamic || src.isDefrag());
     setOutEdges(std::forward<SourceT>(src).outEdges);
     edgeHeads = std::forward<SourceT>(src).edgeHeads;
+	edgeTails = std::forward<SourceT>(src).edgeTails;
     edgeCount = src.edgeCount;
     RUN_FORALL(setAttribute<VertexAttributes>(std::forward<SourceT>(src), numVertices()));
     RUN_FORALL(setAttribute<EdgeAttributes>(std::forward<SourceT>(src), edgeHeads.size()));
@@ -218,8 +223,10 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
   }
 
   // Returns the head vertex of edge e.
-  int edgeTail(const int e) const {
-    assert(e >= 0); assert(e < edgeTails.size()); assert(isValidEdge(e));
+  int edgeTail_z(const int e) const {
+    assert(e >= 0);
+	assert(e < edgeTails.size());
+	assert(isValidEdge(e));
     return edgeTails[e];
   }
 
@@ -228,6 +235,13 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
   {
 	  assert(e >= 0); assert(e < edgeTails.size()); 
 	  return realEdges[e];
+  }
+
+  // Returns 1.0 if edge real, 0.0 otherwise
+  const double& edgeFake(const int e) const
+  {
+	  assert(e >= 0); assert(e < edgeTails.size()); 
+	  return fakeEdges[e];
   }
 
   // Returns the value of the attribute Attr for the vertex/edge with index idx.
@@ -483,6 +497,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
 
     // Reorder the edge arrays according to the permutation.
     perm.applyTo(edgeHeads);
+	perm.applyTo(edgeTails);
     edgeHeads.resize(numEdges());
     RUN_FORALL(perm.applyTo(EdgeAttributes::values));
     RUN_FORALL(EdgeAttributes::values.resize(numEdges()));
@@ -509,6 +524,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
       }
 
       edgePerm.applyTo(edgeHeads);
+	  edgePerm.applyTo(edgeTails);
       RUN_FORALL(edgePerm.applyTo(EdgeAttributes::values));
       outEdges.swap(temp);
     }
@@ -518,6 +534,9 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     // Update edge heads.
     for (auto& head : edgeHeads)
       head = perm[head];
+	
+	for (auto& tail : edgeTails)
+      tail = perm[tail];
   }
 
   // Removes all vertices and edges that do not lie in the vertex-induced subgraph specified by the
@@ -614,6 +633,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
     Graph reverse;
     reverse.outEdges.resize(outEdges.size());
     reverse.edgeHeads.resize(numEdges());
+	reverse.edgeTails.resize(numEdges());
     reverse.edgeCount = numEdges();
     RUN_FORALL(reverse.VertexAttributes::values = VertexAttributes::values);
     RUN_FORALL(reverse.EdgeAttributes::values.resize(numEdges()));
@@ -639,6 +659,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
       for (int e = firstEdge(u); e != lastEdge(u); ++e) {
         const int idx = reverse.outEdges[edgeHeads[e]].first()++;
         reverse.edgeHeads[idx] = u;
+		reverse.edgeTails[idx] = edgeHeads[e];
         RUN_FORALL(reverse.EdgeAttributes::values[idx] = EdgeAttributes::values[e]);
       }
 
@@ -698,7 +719,7 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
       edgesSorted &= prevTailId <= im.edgeTail();
       prevTailId = im.edgeTail();
     }
-    assert(im.numEdges() == 0 || edgeTails.size() == im.numEdges());
+    assert(im.numEdges() == 0 || edgeTails.size() == edgeHeads.size());
     edgeCount = edgeTails.size();
 
     im.close();
@@ -944,7 +965,8 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
   AlignedVector<OutEdgeRange> outEdges; // The ranges of outgoing edges of the vertices.
   AlignedVector<int32_t> edgeHeads;     // The head vertices of the edges.
   AlignedVector<int32_t> edgeTails;
-  AlignedVector<double> realEdges; // array of 0.0 and 1.0 value indicating if edges are pointing to real edges or not
+  AlignedVector<double> realEdges; // array of 0.0 and 1.0 value indicating if edges are pointing to real edges
+  AlignedVector<double> fakeEdges; // array of 0.0 and 1.0 value indicating if edges are pointing to fake edges
 
   int edgeCount; // The number of edges in the graph.
 

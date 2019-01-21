@@ -6,10 +6,10 @@
 
 // The BPR travel cost function, relating the travel time on an edge to the flow on this edge.
 template <typename GraphT>
-class ApproxBprFunction {
+class UnawareBprFunction {
  public:
   // Constructs a BPR function.
-	ApproxBprFunction(const GraphT& graph) : graph(graph), bpr(graph), cbpr(graph) {
+	UnawareBprFunction(const GraphT& graph) : graph(graph), bpr(graph), cbpr(graph) {
 		exo = graph.exogenous();
 		dummy_id = graph.dummyId();
 		exo_v = Vec4d(exo);
@@ -21,18 +21,7 @@ class ApproxBprFunction {
 	  const double cap = graph.capacity(e);
 	  
 	  if (graph.edgeReal(e))
-	  {
-		  x_new = x + exo*cap;
-		  const double pt = XTH * cap;
-		  if (x_new <= pt)
-			  return bpr(e, exo*cap);
-		  else
-		  {
-			  double b_slope = (bpr(e, 2*cap) - bpr(e, pt)) / (2*cap - pt);
-			  double cost =  b_slope * (x_new - pt) +  bpr(e, exo*cap);
-			  return cost;
-		  }
-	  }
+		  return bpr(e, exo*cap);
 	  else
 	  {
 		  x_new = x;
@@ -49,17 +38,7 @@ class ApproxBprFunction {
 	  double x_new;
 	  const double cap = graph.capacity(e);
 	  if (graph.edgeReal(e))
-	  {
-		  x_new = x + exo*cap;
-		  const double pt =XTH * cap;
-		  if (x <= pt)
-			  return 0.0;
-		  else
-		  {
-			  double b_slope = (bpr(e, 2*cap) - bpr(e, pt)) / (2*cap - pt);
-			  return b_slope;
-		  }
-	  }
+		  return 0.0;
 	  else
 	  {
 		  x_new = x;
@@ -88,11 +67,7 @@ class ApproxBprFunction {
 	  Vec4d val_fake = cbpr(e,x)*edgeFake;
 
 	  Vec4d x_new;
-	  x_new = x + exo_v*cap_v;
-
-	  Vec4d pt_real = XTH * cap_v;
-	  Vec4d slope = (bpr(e,2*cap_v)-bpr(e,pt_real))/(2*cap-pt_real);
-	  Vec4d val_real = (bpr(e, exo_v*cap_v) + slope * (max(x_new, pt_real) - pt_real)) * edgeReal;
+	  Vec4d val_real = bpr(e, exo_v*cap_v) * edgeReal;
 	  
 	  return val_fake + val_real;
   }
@@ -106,15 +81,9 @@ class ApproxBprFunction {
 	  edgeFake.load(&graph.edgeFake(e));
 	  Vec4d val_fake = cbpr.derivative(e,x)*edgeFake;
 
-	  Vec4d x_new;
-	  x_new = x + exo_v*cap_v;
-	  Vec4d pt_real = XTH * cap_v;
-	  Vec4d slope = (bpr(e,2*cap_v)-bpr(e,pt_real))/(2*cap-pt_real);
-	  Vec4d val_real = slope *  ((min(x_new,pt_real)-x_new) / (pt_real-x_new)) * edgeReal;
-
-	  return val_fake + val_real; 
+	  // val_real is simply (0,0,0,0), and the correct values are already found in val_fake
+	  return val_fake;
   }
-
 
   private:
 	const GraphT& graph; // The graph on whose edges we operate.

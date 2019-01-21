@@ -88,12 +88,13 @@ class CsvImporter {
 	  if (!vertexFile.read_row(currentVertex.id, x, y))
 		  return false;
 
-	  // TODO: this is a code transferring lat-lng into fake integers
-	  const int lat = LatLng::PRECISION / 100000 * int(x);
-	  const int lng = LatLng::PRECISION / 100000 * int(y);
+	  
+	  /*const int lat = LatLng::PRECISION / 100000 * int(x);
+		const int lng = LatLng::PRECISION / 100000 * int(y);*/
 	  assert(origToNewIds.find(currentVertex.id) == origToNewIds.end());
 	  origToNewIds[currentVertex.id] = nextVertexId++;
-	  currentVertex.latLng = LatLng(lat,lng);
+	  // currentVertex.latLng = LatLng(lat,lng);
+	  currentVertex.latLng = LatLng(x,y);
 	  return true;
   }
 

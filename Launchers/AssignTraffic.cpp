@@ -21,6 +21,8 @@
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/ApproxBprFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/UnawareBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/DavidsonFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/InverseFunction.h"
@@ -47,7 +49,8 @@ void printUsage() {
       "  -n <num>          the number of iterations (0 means use stopping criterion)\n"
       "  -f <func>         the travel cost function\n"
       "                      possible values:\n"
-      "                        bpr modified_bpr custom_bpr davidson modified_davidson (default) inverse\n"
+      "                        bpr modified_bpr custom_bpr approx_bpr unaware_bpr\n"
+	  "                        davidson modified_davidson (default) inverse\n"
       "  -a <algo>         the shortest-path algorithm\n"
       "                      possible values: dijkstra (default) bidijkstra ch cch\n"
       "  -ord <order>      the order of the OD-pairs\n"
@@ -316,6 +319,16 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
   {
 	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
 	  std::cout << "custom BPR is used!" << std::endl;
+  }
+  else if (func == "approx_bpr")
+  {
+	  chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);
+	  std::cout << "approx BPR is used!" << std::endl;
+  }
+  else if (func == "unaware_bpr")
+  {
+	  chooseShortestPathAlgo<ObjFunctionT, UnawareBprFunction>(clp);
+	  std::cout << "unaware BPR is used!" << std::endl;
   }
   else if (func == "davidson")
     chooseShortestPathAlgo<ObjFunctionT, DavidsonFunction>(clp);
