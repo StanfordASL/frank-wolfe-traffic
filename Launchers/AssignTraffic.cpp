@@ -44,6 +44,7 @@ void printUsage() {
       "This program assigns OD-pairs onto a network using the Frank-Wolfe method. It\n"
       "supports different objectives, travel cost functions and shortest-path algos.\n"
       "  -so               find the system optimum (default: user equilibrium)\n"
+	  "  -loss             generate solution for AMoD-LOSS\n"
       "  -v                display informative messages\n"
       "  -p <hrs>          the period of analysis in hours (default: 1)\n"
       "  -n <num>          the number of iterations (0 means use stopping criterion)\n"
@@ -261,7 +262,7 @@ void assignTraffic(const CommandLineParser& clp) {
     patternFile << "numIteration,tail,head,freeFlowCost,actualCost,capacity,flow\n";
   }
 
-  FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"));
+  FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
 
   if (csv.is_open()) {
     csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";

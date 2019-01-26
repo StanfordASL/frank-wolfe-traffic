@@ -39,7 +39,10 @@ class DijkstraAdapter {
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
+    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool compute_loss = false) {
+		// loss is not implemented here
+		assert(!compute_loss);
+		
       // Run a centralized Dijkstra search.
       search.run(sources, targets);
 

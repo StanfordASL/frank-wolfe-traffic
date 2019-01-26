@@ -32,8 +32,8 @@ class FrankWolfeAssignment {
   // Constructs an assignment procedure based on the Frank-Wolfe method.
   FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs,
                        std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile,
-                       const bool verbose = true)
-      : allOrNothingAssignment(graph, odPairs, verbose),
+                       const bool verbose = true, const bool consider_loss = false)
+      : allOrNothingAssignment(graph, odPairs, verbose, consider_loss),
         inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
         trafficFlows(graph.numEdges()),
         travelCostFunction(graph),
@@ -43,6 +43,8 @@ class FrankWolfeAssignment {
         patternFile(patternFile),
         verbose(verbose) {
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
+
+	std::cout << "consider_loss=" << consider_loss << std::endl;
 
 	/*FORALL_EDGES(inputGraph, e)
 	  std::cout << inputGraph.edgeTail(e) << " " << inputGraph.edgeHead(e) <<  " " << inputGraph.capacity(e) << std::endl;*/

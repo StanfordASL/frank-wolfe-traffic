@@ -45,26 +45,60 @@ class CHAdapter {
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
-      // Run a centralized CH search.
-      for (auto i = 0; i < K; ++i) {
-        sources[i] = ch.rank(sources[i]);
-        targets[i] = ch.rank(targets[i]);
-      }
-      search.run(sources, targets);
+    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool consider_loss = false) {
+		// Run a centralized CH search.
+		for (auto i = 0; i < K; ++i) {
+			sources[i] = ch.rank(sources[i]);
+			targets[i] = ch.rank(targets[i]);
+		}
+		search.run(sources, targets);
+		
+		// Assign flow to the edges on the computed paths.
+		if (!consider_loss)
+		{
+			for (auto i = 0; i < k; ++i) {
+				for (const auto e : search.getUpEdgePath(i)) {
+					assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
+					++localFlowsOnUpEdges[e];
+				}
+				for (const auto e : search.getDownEdgePath(i)) {
+					assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
+					++localFlowsOnDownEdges[e];
+				}
+			}
+		} else {
+			std::cout << "HERE" << std::endl;
+			
+			// make sure that k is divisible by 3
+			assert(k % 3 == 0);
+			const int k_third = k / 3;
+			
+			// choose only the correct path
+			for (auto i = 0; i < k_third; i++){
+				int cost_rebalance = search.getDistance(i) + search.getDistance(i + k_third);
+				int cost_loss = search.getDistance(i + 2*k_third);
 
-      // Assign flow to the edges on the computed paths.
-      for (auto i = 0; i < k; ++i) {
-        for (const auto e : search.getUpEdgePath(i)) {
-          assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
-          ++localFlowsOnUpEdges[e];
-        }
-        for (const auto e : search.getDownEdgePath(i)) {
-          assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
-          ++localFlowsOnDownEdges[e];
-        }
-      }
-    }
+				std::vector<int> to_process;
+				if (cost_rebalance < cost_loss){
+					to_process.push_back(i);
+					to_process.push_back(i+k_third);
+				}
+				else
+					to_process.push_back(i+2*k_third);
+
+				for (auto it = to_process.begin(); it != to_process.end(); it++){
+					for (const auto e : search.getUpEdgePath(*it)) {
+						assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
+						++localFlowsOnUpEdges[e];
+					}
+					for (const auto e : search.getDownEdgePath(*it)) {
+						assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
+						++localFlowsOnDownEdges[e];
+					}
+				}
+			}
+		}
+	}
 
     // Returns the length of the i-th shortest path.
     int getDistance(const int /*dst*/, const int i) {

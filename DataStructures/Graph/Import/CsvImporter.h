@@ -222,7 +222,7 @@ inline NumLanesAttribute::Type CsvImporter::getValue<NumLanesAttribute>() const 
 // This is the time it takes to traverse edge in free flow
 template <>
 inline TravelTimeAttribute::Type CsvImporter::getValue<TravelTimeAttribute>() const {
-  return std::round(36.0 * currentEdge.length / currentEdge.freeFlowSpeed);
+  return std::round(360.0 * currentEdge.length / currentEdge.freeFlowSpeed);
 }
 
 // Returns the value of the vertex ID attribute for the current vertex.

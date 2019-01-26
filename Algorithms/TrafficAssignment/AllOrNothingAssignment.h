@@ -28,12 +28,12 @@ class AllOrNothingAssignment {
   // Constructs an all-or-nothing assignment instance.
   AllOrNothingAssignment(const InputGraph& graph,
                          const std::vector<ClusteredOriginDestination>& odPairs,
-                         const bool verbose = true)
+                         const bool verbose = true, const bool consider_loss = false)
       : stats(odPairs.size()),
         shortestPathAlgo(graph),
         inputGraph(graph),
         odPairs(odPairs),
-        verbose(verbose) {
+        verbose(verbose), consider_loss(consider_loss) {
     Timer timer;
     shortestPathAlgo.preprocess();
     stats.totalPreprocessingTime = timer.elapsed();
@@ -75,7 +75,7 @@ class AllOrNothingAssignment {
           sources[k] = odPairs[i + k * samplingInterval].origin;
           targets[k] = odPairs[i + k * samplingInterval].destination;
         }
-        queryAlgo.run(sources, targets, k);
+        queryAlgo.run(sources, targets, k, consider_loss);
 
         for (int j = 0; j < k; ++j) {
           // Maintain the avg and max change in the OD-distances between the last two iterations.
@@ -138,4 +138,6 @@ class AllOrNothingAssignment {
   const ODPairs& odPairs;             // The OD-pairs to be assigned onto the graph.
   AlignedVector<int> trafficFlows;    // The traffic flows on the edges.
   const bool verbose;                 // Should informative messages be displayed?
+  const bool consider_loss; 
+	
 };
