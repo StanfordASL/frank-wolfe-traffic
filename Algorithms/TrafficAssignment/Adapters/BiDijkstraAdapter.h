@@ -35,7 +35,7 @@ class BiDijkstraAdapter {
     // Constructs a query algorithm instance working on the specified data.
     QueryAlgo(
         const InputGraph& inputGraph, const InputGraph& reverseGraph,
-        AlignedVector<int>& flowsOnForwardEdges, AlignedVector<int>& flowsOnReverseEdges)
+        AlignedVector<int>& flowsOnForwardEdges, AlignedVector<int>& flowsOnReverseEdges, const int odNum)
         : search(inputGraph, reverseGraph),
           flowsOnForwardEdges(flowsOnForwardEdges),
           flowsOnReverseEdges(flowsOnReverseEdges),
@@ -43,12 +43,16 @@ class BiDijkstraAdapter {
           localFlowsOnReverseEdges(flowsOnReverseEdges.size()) {
       assert(inputGraph.numEdges() == flowsOnForwardEdges.size());
       assert(reverseGraph.numEdges() == flowsOnReverseEdges.size());
+	  (void)odNum;
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool compute_loss = false) {
+    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool consider_loss, const int first_k) {
 		// loss is not implemented here
-		assert(!compute_loss);
+		assert(!consider_loss);
+		(void)consider_loss;
+		(void)first_k;
+		
       // Run a centralized bidirectional search.
       search.run(sources, targets);
 
@@ -71,11 +75,16 @@ class BiDijkstraAdapter {
     }
 
     // Adds the local flow counters to the global ones. Must be synchronized externally.
-    void addLocalToGlobalFlows() {
-      for (auto e = 0; e < flowsOnForwardEdges.size(); ++e) {
-        flowsOnForwardEdges[e] += localFlowsOnForwardEdges[e];
-        flowsOnReverseEdges[e] += localFlowsOnReverseEdges[e];
-      }
+    void addLocalToGlobalFlows(const bool consider_loss = false) {
+		// loss is not implemented here
+		assert(!consider_loss);
+		if (consider_loss)
+			std::cout << "This is not supposed to happen" << std::endl;
+		
+		for (auto e = 0; e < flowsOnForwardEdges.size(); ++e) {
+			flowsOnForwardEdges[e] += localFlowsOnForwardEdges[e];
+			flowsOnReverseEdges[e] += localFlowsOnReverseEdges[e];
+		}
     }
 
    private:
@@ -89,11 +98,11 @@ class BiDijkstraAdapter {
   };
 
   // Constructs an adapter for bidirectional search.
-  explicit BiDijkstraAdapter(const InputGraph& inputGraph)
+	explicit BiDijkstraAdapter(const InputGraph& inputGraph, const int odNum)
       : inputGraph(inputGraph),
         reverseGraph(inputGraph.getReverseGraph()),
         flowsOnForwardEdges(inputGraph.numEdges()),
-        flowsOnReverseEdges(inputGraph.numEdges()) {
+        flowsOnReverseEdges(inputGraph.numEdges()), odNum(odNum) {
     assert(inputGraph.isDefrag());
   }
 
@@ -113,7 +122,7 @@ class BiDijkstraAdapter {
 
   // Returns an instance of the query algorithm.
   QueryAlgo getQueryAlgoInstance() {
-    return {inputGraph, reverseGraph, flowsOnForwardEdges, flowsOnReverseEdges};
+	  return {inputGraph, reverseGraph, flowsOnForwardEdges, flowsOnReverseEdges, odNum};
   }
 
   // Propagates the flows on the edges in the search graphs to the edges in the input graph.
@@ -130,6 +139,7 @@ class BiDijkstraAdapter {
 
   AlignedVector<int> flowsOnForwardEdges; // The flows on the edges in the forward graph.
   AlignedVector<int> flowsOnReverseEdges; // The flows on the edges in the reverse graph.
+	const int odNum;
 };
 
 }

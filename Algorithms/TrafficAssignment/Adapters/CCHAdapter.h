@@ -40,7 +40,7 @@ class CCHAdapter {
     // Constructs a query algorithm instance working on the specified data.
     QueryAlgo(
         const CH& minimumWeightedCH, const std::vector<int32_t>& eliminationTree,
-        AlignedVector<int>& flowsOnUpEdges, AlignedVector<int>& flowsOnDownEdges)
+        AlignedVector<int>& flowsOnUpEdges, AlignedVector<int>& flowsOnDownEdges, const int odNum)
         : minimumWeightedCH(minimumWeightedCH),
           search(minimumWeightedCH, eliminationTree),
           flowsOnUpEdges(flowsOnUpEdges),
@@ -49,12 +49,15 @@ class CCHAdapter {
           localFlowsOnDownEdges(flowsOnDownEdges.size()) {
       assert(minimumWeightedCH.upwardGraph().numEdges() == flowsOnUpEdges.size());
       assert(minimumWeightedCH.downwardGraph().numEdges() == flowsOnDownEdges.size());
+	  (void)odNum;
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-	void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool compute_loss = false) {
+	void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool consider_loss, const int first_k) {
 		// loss is not implemented here
-		assert(!compute_loss);
+		assert(!consider_loss);
+		(void)consider_loss;
+		(void)first_k;
 		
       // Run a centralized CH search.
       for (auto i = 0; i < K; ++i) {
@@ -82,11 +85,16 @@ class CCHAdapter {
     }
 
     // Adds the local flow counters to the global ones. Must be synchronized externally.
-    void addLocalToGlobalFlows() {
-      FORALL_EDGES(minimumWeightedCH.upwardGraph(), e)
-        flowsOnUpEdges[e] += localFlowsOnUpEdges[e];
-      FORALL_EDGES(minimumWeightedCH.downwardGraph(), e)
-        flowsOnDownEdges[e] += localFlowsOnDownEdges[e];
+    void addLocalToGlobalFlows(const bool consider_loss = false) {
+		// loss is not implemented here
+		assert(!consider_loss);
+		if (consider_loss)
+			std::cout << "This is not supposed to happen" << std::endl;
+		
+		FORALL_EDGES(minimumWeightedCH.upwardGraph(), e)
+			flowsOnUpEdges[e] += localFlowsOnUpEdges[e];
+		FORALL_EDGES(minimumWeightedCH.downwardGraph(), e)
+			flowsOnDownEdges[e] += localFlowsOnDownEdges[e];
     }
 
    private:
@@ -99,8 +107,8 @@ class CCHAdapter {
   };
 
   // Constructs an adapter for CCHs.
-  explicit CCHAdapter(const InputGraph& inputGraph)
-      : inputGraph(inputGraph), currentMetric(cch, &inputGraph.template get<WeightT>(0)) {
+	explicit CCHAdapter(const InputGraph& inputGraph, const int odNum)
+		: inputGraph(inputGraph), currentMetric(cch, &inputGraph.template get<WeightT>(0)), odNum(odNum) {
     assert(inputGraph.numEdges() > 0); assert(inputGraph.isDefrag());
   }
 
@@ -153,7 +161,7 @@ class CCHAdapter {
 
   // Returns an instance of the query algorithm.
   QueryAlgo getQueryAlgoInstance() {
-    return {minimumWeightedCH, cch.getEliminationTree(), flowsOnUpEdges, flowsOnDownEdges};
+	  return {minimumWeightedCH, cch.getEliminationTree(), flowsOnUpEdges, flowsOnDownEdges, odNum};
   }
 
   // Propagates the flows on the edges in the search graphs to the edges in the input graph.
@@ -186,6 +194,7 @@ class CCHAdapter {
 
   AlignedVector<int> flowsOnUpEdges;   // The flows on the edges in the upward graph.
   AlignedVector<int> flowsOnDownEdges; // The flows on the edges in the downward graph.
+	const int odNum;
 };
 
 }

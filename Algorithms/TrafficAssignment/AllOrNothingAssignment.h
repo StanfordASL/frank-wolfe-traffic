@@ -30,7 +30,7 @@ class AllOrNothingAssignment {
                          const std::vector<ClusteredOriginDestination>& odPairs,
                          const bool verbose = true, const bool consider_loss = false)
       : stats(odPairs.size()),
-        shortestPathAlgo(graph),
+        shortestPathAlgo(graph, odPairs.size()),
         inputGraph(graph),
         odPairs(odPairs),
         verbose(verbose), consider_loss(consider_loss) {
@@ -40,6 +40,8 @@ class AllOrNothingAssignment {
     stats.lastRoutingTime = stats.totalPreprocessingTime;
     stats.totalRoutingTime = stats.totalPreprocessingTime;
     if (verbose) std::cout << "  Prepro: " << stats.totalPreprocessingTime << "ms" << std::endl;
+
+	std::cout << "od_pairs size" << odPairs.size() << std::endl;
   }
 
   // Assigns all OD-flows to their currently shortest paths.
@@ -47,23 +49,30 @@ class AllOrNothingAssignment {
     Timer timer;
     ++stats.numIterations;
     if (verbose) std::cout << "Iteration " << stats.numIterations << ": " << std::flush;
+	std::cout << "odPairs.size()" << odPairs.size() << std::endl;
+	
     shortestPathAlgo.customize();
     stats.lastCustomizationTime = timer.elapsed();
 
     timer.restart();
-    ProgressBar bar(std::ceil(1.0 * odPairs.size() / (K * samplingInterval)), verbose);
+    //ProgressBar bar(std::ceil(1.0 * odPairs.size() / (K * samplingInterval)), verbose);
     trafficFlows.assign(inputGraph.numEdges(), 0);
     stats.startIteration();
     int totalNumPairsSampledBefore = 0;
-    #pragma omp parallel
+    
+	
+	//#pragma omp parallel
+	#pragma omp critical (combineResults2)
     {
-      auto queryAlgo = shortestPathAlgo.getQueryAlgoInstance();
+	  auto queryAlgo = shortestPathAlgo.getQueryAlgoInstance();
       int64_t checksum = 0;
       double avgChange = 0;
       double maxChange = 0;
       int numPairsSampledBefore = 0;
 
-      #pragma omp for schedule(dynamic, 64) nowait
+
+	  //#pragma omp critical (combineResults)
+	  //#pragma omp for schedule(dynamic, 64) nowait
       for (int i = 0; i < odPairs.size(); i += K * samplingInterval) {
         // Run multiple shortest-path computations simultaneously.
         std::array<int, K> sources;
@@ -75,7 +84,7 @@ class AllOrNothingAssignment {
           sources[k] = odPairs[i + k * samplingInterval].origin;
           targets[k] = odPairs[i + k * samplingInterval].destination;
         }
-        queryAlgo.run(sources, targets, k, consider_loss);
+        queryAlgo.run(sources, targets, k, consider_loss, i);
 
         for (int j = 0; j < k; ++j) {
           // Maintain the avg and max change in the OD-distances between the last two iterations.
@@ -89,19 +98,20 @@ class AllOrNothingAssignment {
           avgChange += std::max(0.0, change);
           maxChange = std::max(maxChange, change);
         }
-        ++bar;
+        //++bar;
       }
 
       #pragma omp critical (combineResults)
       {
-        queryAlgo.addLocalToGlobalFlows();
+		queryAlgo.addLocalToGlobalFlows(consider_loss);
         stats.lastChecksum += checksum;
         stats.avgChangeInDistances += avgChange;
         stats.maxChangeInDistances = std::max(stats.maxChangeInDistances, maxChange);
         totalNumPairsSampledBefore += numPairsSampledBefore;
       }
     }
-    bar.finish();
+	
+    //bar.finish();
 
     shortestPathAlgo.propagateFlowsToInputEdges(trafficFlows);
     std::for_each(trafficFlows.begin(), trafficFlows.end(), [&](int& f) { f *= samplingInterval; });
