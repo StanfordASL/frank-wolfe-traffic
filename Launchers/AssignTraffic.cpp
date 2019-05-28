@@ -42,6 +42,7 @@
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction_elastic.h"
 #include "Algorithms/TrafficAssignment/FrankWolfeAssignment_elastic.h"
 
+
 void printUsage() {
   std::cout <<
       "Usage: AssignTraffic [-f <func>] [-a <algo>] -i <file> -od <file> [-o <file>]\n"
@@ -189,7 +190,6 @@ void assignTraffic(const CommandLineParser& clp) {
     
   //Added by Lucas
   const std::string isnegativeFilename = clp.getValue<std::string>("edgeS","none");
-  const int ED = clp.getValue<int>("ED",0);
     
     
   std::ifstream in(infilename, std::ios::binary);
@@ -275,27 +275,45 @@ void assignTraffic(const CommandLineParser& clp) {
       patternFile << "# Main file: " << csvFilename << ".csv\n";
     patternFile << "numIteration,tail,head,freeFlowCost,actualCost,capacity,flow\n";
   }
+
+
   //Lucas note: you don't have to consider separate cases here, as the FrankWolAssignmentT is a type only
   //Depending on the choice in "chooseShosrtestPathAlgo" it will launch one or another
   //
   //Actually I don't think it's true: you have to launch it with the proper arguments here
   //So either one if it's elastic or another if it's not elastic
 
-  FrankWolfeAssignmentT assign();//declare assign before entering the if-else statement
-  if(ED==0)
+  //FrankWolfeAssignmentT assign();//declare assign before entering the if-else statement
+  //Problem is the ED variable is not enough to convince the alg that we won't call it with elastic and no string e.g.
+  //
+  //if condition should be on assignment type 
+
+  if(!clp.isSet("ED")){
+  if(strcmp(typeid(FrankWolfeAssignmentT).name(),"FrankWolfeAssignment")==0){
   	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
-  else
-  	FrankWolfeAssignmentT assign(isnegativeFilename,graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
+    if (csv.is_open()) {
+      csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
+      csv << "iteration,sampling_interval,customization_time,query_time,line_search_time,total_time,";
+      csv << "avg_change,max_change,obj_function_value,total_travel_cost,checksum\n";
+      csv << std::flush;
+    }
 
+    assign.run(numIterations, intervals);
+  }else{
+  	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
+    if (csv.is_open()) {
+      csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
+      csv << "iteration,sampling_interval,customization_time,query_time,line_search_time,total_time,";
+      csv << "avg_change,max_change,obj_function_value,total_travel_cost,checksum\n";
+      csv << std::flush;
+    }
 
-  if (csv.is_open()) {
-    csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
-    csv << "iteration,sampling_interval,customization_time,query_time,line_search_time,total_time,";
-    csv << "avg_change,max_change,obj_function_value,total_travel_cost,checksum\n";
-    csv << std::flush;
+    assign.run(numIterations, intervals);
   }
 
-  assign.run(numIterations, intervals);
+
+  
+}
 }
 
 // Picks the shortest-path algorithm according to the command line options.
@@ -311,10 +329,9 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
 
   //Added by Lucas
   //const std::string isnegativeFilename = clp.getValue<std::string>("edgeS","none");
-  const int ED = clp.getValue<int>("ED",0);
   
   //Edited by Lucas
-  if (ED==0){//fixed demand
+  if (!clp.isSet("ED")){//fixed demand
       if (algo == "dijkstra") {
         using Assignment = FrankWolfeAssignment<
             ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
@@ -355,6 +372,7 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
           throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
       }
   }
+}
     
 
 // Picks the travel cost function according to the command line options.
