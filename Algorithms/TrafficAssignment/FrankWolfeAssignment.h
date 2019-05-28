@@ -9,6 +9,9 @@
 
 #include <vectorclass/vectorclass.h>
 
+//Added by Lucas
+#include <csv.h>
+
 #include "Algorithms/TrafficAssignment/AllOrNothingAssignment.h"
 #include "Algorithms/TrafficAssignment/UnivariateMinimization.h"
 #include "DataStructures/Graph/Attributes/TravelCostAttribute.h"
@@ -17,6 +20,15 @@
 #include "Stats/TrafficAssignment/FrankWolfeAssignmentStats.h"
 #include "Tools/Simd/AlignedVector.h"
 #include "Tools/Timer.h"
+
+//Added by Lucas
+#include "DataStructures/Graph/Attributes/IsNegativeAttribute.h"
+#include "DataStructures/Graph/Attributes/VertexPotentialAttribute.h"
+#include "DataStructures/Graph/Attributes/EdgePotentialShiftAttribute.h"
+#include "DataStructures/Graph/Attributes/EdgeNegativeShiftAttribute.h"
+
+#define INVERSE_DEMAND_SHIFT 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
+#define VERTEX_POTENTIAL 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
 
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
@@ -32,7 +44,7 @@ class FrankWolfeAssignment {
   // Constructs an assignment procedure based on the Frank-Wolfe method.
   FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs,
                        std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile,
-                       const bool verbose = true, const bool consider_loss = false)
+                       const bool verbose = true, const bool consider_loss = false,const std::string& negative_filename="NULL")
       : allOrNothingAssignment(graph, odPairs, verbose, consider_loss),
         inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
         trafficFlows(graph.numEdges()),
@@ -41,7 +53,8 @@ class FrankWolfeAssignment {
         csv(csv),
         distanceFile(distFile),
         patternFile(patternFile),
-        verbose(verbose) {
+        verbose(verbose),
+        isnegativeFile(negative_filename){
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 
 	std::cout << "consider_loss=" << consider_loss << std::endl;
@@ -59,6 +72,40 @@ class FrankWolfeAssignment {
       assert(samplingIntervals[i - 1] % samplingIntervals[i] == 0);
     }
     const AllOrNothingAssignmentStats& substats = allOrNothingAssignment.stats;
+      
+      
+      //--------------------------------------------------- LUCAS WORK IN PROGRESS -------------------------------------------------
+      //Introduce the graph attributes related to the new csv input file
+      if(substats.numIterations==0 && strcmp(isnegativeFile,"NULL")!=0){
+          //Read the csv files
+          isnegativeFile.read_header(io::ignore_extra_column,"isnegative");
+          //single core
+        #ifdef TA_NO_SIMD_LINE_SEARCH
+          FORALL_EDGES(inputGraph, e){
+              isnegativeFile.read_row(inputGraph.isnegative(e));
+              if(inputGraph.isnegative(e)){
+                  inputGraph.edgeNegativeShift(e)=-INVERSE_DEMAND_SHIFT;
+                  vTail=inputGraph.edgeTail(e);
+                  inputGraph.vertex_potential(vTail)=VERTEX_POTENTIAL;//-travelCostFunction(e,0)
+              }
+          }
+          FORALL_EDGES(inputGraph, e){//not nested in the previous loop because we need the potentialshift to remain 0 until all potentials are computed
+              vHead=inputGraph.edgeHead(e);
+              vTail=inputGraph.edgeTail(e);
+              inputGraph.edgePotentialShift(e)=inputGraph.vertex_potential(vTail)-inputGraph.vertex_potential(vHead)
+          }
+          //print test to check if the attribute has been properly instantiated
+          std::cout << "Check Initialization" << std::endl;
+          FORALL_EDGES(inputGraph,e){
+              vHead=inputGraph.edgeHead(e);
+              vTail=inputGraph.edgeTail(e);
+              std::cout << vHead << "->" << vTail << " || Negative? " << inputGraph.isnegative(e) << " || Node Potentials: " << inputGraph.vertex_potential(vHead) << " - " << input.vertex(vTail) << std::endl;
+          }
+        #endif
+          
+      }
+      
+      //--------------------------------------------------- END LUCAS WORK IN PROGRESS -------------------------------------------------
 
     // Initialization.
     Timer timer;
@@ -283,6 +330,11 @@ class FrankWolfeAssignment {
   std::ofstream& distanceFile;           // The output file containing the OD-distances.
   std::ofstream& patternFile;            // The output file containing the flow patterns.
   const bool verbose;                    // Should informative messages be displayed?
+    
+  //Added by Lucas
+  template <int numFields>
+  using CsvDialect = io::CSVReader<numFields>;
+  CsvDialect<1> isnegativeFile;
 };
 
 // An alias template for a user-equilibrium (UE) traffic assignment.
