@@ -28,8 +28,8 @@
 #include "DataStructures/Graph/Attributes/EdgeNegativeShiftAttribute.h"
 
 
-#define INVERSE_DEMAND_SHIFT=1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
-#define VERTEX_POTENTIAL=1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
+#define INVERSE_DEMAND_SHIFT 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
+#define VERTEX_POTENTIAL 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
 
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
@@ -43,9 +43,9 @@ class FrankWolfeAssignment_elastic {
   using InputGraph = InputGraphT;
 
   // Constructs an assignment procedure based on the Frank-Wolfe method.
-  FrankWolfeAssignment_elastic(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs,
+  FrankWolfeAssignment_elastic(const std::string& negative_filename, InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs,
                        std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile,
-                       const bool verbose = true, const bool consider_loss = false, const std::string& negative_filename)
+                       const bool verbose = true, const bool consider_loss = false)
       : allOrNothingAssignment(graph, odPairs, verbose, consider_loss),
         inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
         trafficFlows(graph.numEdges()),
@@ -324,6 +324,10 @@ class FrankWolfeAssignment_elastic {
   using TravelCostFunction = TravelCostFunctionT<InputGraphT>;
   using ObjFunction = ObjFunctionT<TravelCostFunction>;
 
+  //Added by Lucas
+  template <int numFields>
+  using CsvDialect = io::CSVReader<numFields>;
+
   AllOrNothing allOrNothingAssignment;   // The all-or-nothing assignment algo used as a subroutine.
   InputGraphT& inputGraph;               // The input graph.
 	// InputGraphT inputGraphReversed;        // Reversed input graph (needed to get edge tails)
@@ -334,7 +338,7 @@ class FrankWolfeAssignment_elastic {
   std::ofstream& distanceFile;           // The output file containing the OD-distances.
   std::ofstream& patternFile;            // The output file containing the flow patterns.
   const bool verbose;                    // Should informative messages be displayed?
-  CsvDialect<1> isnegativeFile;
+  CsvDialect<1> isnegativeFile;          //Added by Lucas
 };
 
 // An alias template for a user-equilibrium (UE) traffic assignment.

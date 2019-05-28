@@ -300,7 +300,7 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
   const std::string algo = clp.getValue<std::string>("a", "dijkstra");
   
   //Edited by Lucas
-  if (ED==0){
+  if (ED==0){//fixed demand
       if (algo == "dijkstra") {
         using Assignment = FrankWolfeAssignment<
             ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
@@ -320,21 +320,21 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
       } else {
         throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
       }
-  }else{
+  }else{//elastic demand
       if (algo == "dijkstra") {
-          using Assignment = FrankWolfeAssignment_elastic<
+          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
           ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else if (algo == "bidijkstra") {
-          using Assignment = FrankWolfeAssignment_elastic<
+          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
           ObjFunctionT, TravelCostFunctionT, trafficassignment::BiDijkstraAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else if (algo == "ch") {
-          using Assignment = FrankWolfeAssignment_elastic<
+          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
           ObjFunctionT, TravelCostFunctionT, trafficassignment::CHAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else if (algo == "cch") {
-          using Assignment = FrankWolfeAssignment_elastic<
+          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
           ObjFunctionT, TravelCostFunctionT, trafficassignment::CCHAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else {

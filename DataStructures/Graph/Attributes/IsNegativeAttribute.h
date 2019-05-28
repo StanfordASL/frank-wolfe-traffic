@@ -6,11 +6,11 @@
 #include "Tools/Constants.h"
 
 // An attribute associating a travel cost with each edge of a graph.
-class IsNegativeAttribute : public AbstractAttribute<bool> {
+class IsNegativeAttribute : public AbstractAttribute<int> {
  public:
   // Returns the attribute's default value.
   static Type defaultValue() {
-    return FALSE;
+    return false;
   }
 
   // Returns the travel cost on edge e.
