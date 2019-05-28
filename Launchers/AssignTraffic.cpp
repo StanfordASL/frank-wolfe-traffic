@@ -188,8 +188,8 @@ void assignTraffic(const CommandLineParser& clp) {
   const double exogenous = clp.getValue<double>("exo",0.0);
     
   //Added by Lucas
-  const std::string isnegativeFilename = clp.getValue<std::string>("edgeS","none")
-  const int ED = clp.getValue<int>(ED,0)
+  const std::string isnegativeFilename = clp.getValue<std::string>("edgeS","none");
+  const int ED = clp.getValue<int>("ED",0);
     
     
   std::ifstream in(infilename, std::ios::binary);
@@ -275,8 +275,18 @@ void assignTraffic(const CommandLineParser& clp) {
       patternFile << "# Main file: " << csvFilename << ".csv\n";
     patternFile << "numIteration,tail,head,freeFlowCost,actualCost,capacity,flow\n";
   }
+  //Lucas note: you don't have to consider separate cases here, as the FrankWolAssignmentT is a type only
+  //Depending on the choice in "chooseShosrtestPathAlgo" it will launch one or another
+  //
+  //Actually I don't think it's true: you have to launch it with the proper arguments here
+  //So either one if it's elastic or another if it's not elastic
 
-  FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
+  FrankWolfeAssignmentT assign();//declare assign before entering the if-else statement
+  if(ED==0)
+  	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
+  else
+  	FrankWolfeAssignmentT assign(isnegativeFilename,graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"));
+
 
   if (csv.is_open()) {
     csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
@@ -298,6 +308,10 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
   using Graph = StaticGraph<VertexAttributes, EdgeAttributes>;
 
   const std::string algo = clp.getValue<std::string>("a", "dijkstra");
+
+  //Added by Lucas
+  //const std::string isnegativeFilename = clp.getValue<std::string>("edgeS","none");
+  const int ED = clp.getValue<int>("ED",0);
   
   //Edited by Lucas
   if (ED==0){//fixed demand
@@ -322,19 +336,19 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
       }
   }else{//elastic demand
       if (algo == "dijkstra") {
-          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
+          using Assignment = FrankWolfeAssignment_elastic<
           ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else if (algo == "bidijkstra") {
-          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
+          using Assignment = FrankWolfeAssignment_elastic<
           ObjFunctionT, TravelCostFunctionT, trafficassignment::BiDijkstraAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else if (algo == "ch") {
-          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
+          using Assignment = FrankWolfeAssignment_elastic<
           ObjFunctionT, TravelCostFunctionT, trafficassignment::CHAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else if (algo == "cch") {
-          using Assignment = FrankWolfeAssignment_elastic<isnegativeFilename,
+          using Assignment = FrankWolfeAssignment_elastic<
           ObjFunctionT, TravelCostFunctionT, trafficassignment::CCHAdapter, Graph>;
           assignTraffic<Assignment>(clp);
       } else {
