@@ -38,6 +38,10 @@
 #include "DataStructures/Utilities/OriginDestination.h"
 #include "Tools/CommandLine/CommandLineParser.h"
 
+//Added by Lucas
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction_elastic.h"
+#include "Algorithms/TrafficAssignment/FrankWolfeAssignment_elastic.h"
+
 void printUsage() {
   std::cout <<
       "Usage: AssignTraffic [-f <func>] [-a <algo>] -i <file> -od <file> [-o <file>]\n"
@@ -51,7 +55,7 @@ void printUsage() {
       "  -f <func>         the travel cost function\n"
       "                      possible values:\n"
       "                        bpr modified_bpr custom_bpr approx_bpr unaware_bpr\n"
-	  "                        davidson modified_davidson (default) inverse\n"
+	  "                        davidson modified_davidson (default) inverse elastic\n"
       "  -a <algo>         the shortest-path algorithm\n"
       "                      possible values: dijkstra (default) bidijkstra ch cch\n"
       "  -ord <order>      the order of the OD-pairs\n"
@@ -66,7 +70,12 @@ void printUsage() {
       "  -fp <file>        output the flow pattern after each iteration in <file>\n"
 	  "  -exo <exo_flow>   value of exogenoes flow (only for custom_bpr)\n"
 	  "  -dummy <dummy_id> value of dummy id (only for custom_bpr)\n"
-      "  -help             display this help and exit\n";  
+    //Added by Lucas
+      "  -ED<int>          using Elastic Demand if 1, not otherwise"
+      "  -edgeS <file>     the sign of edges costs, when using Elastic Demand"
+      "  -help             display this help and exit\n";
+    
+    
 }
 
 // An active vertex during a DFS, i.e., a vertex that has been reached but not finished.
@@ -177,7 +186,12 @@ void assignTraffic(const CommandLineParser& clp) {
   const double period = clp.getValue<double>("p", 1);
   const int dummy_id = clp.getValue<int>("dummy",1351);
   const double exogenous = clp.getValue<double>("exo",0.0);
-
+    
+  //Added by Lucas
+  const std::string isnegativeFilename = clp.getValue<std::string>("edgeS","none")
+  const int ED = clp.getValue<int>(ED,0)
+    
+    
   std::ifstream in(infilename, std::ios::binary);
   if (!in.good())
     throw std::invalid_argument("file not found -- '" + infilename + "'");
@@ -284,26 +298,50 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
   using Graph = StaticGraph<VertexAttributes, EdgeAttributes>;
 
   const std::string algo = clp.getValue<std::string>("a", "dijkstra");
-  if (algo == "dijkstra") {
-    using Assignment = FrankWolfeAssignment<
-        ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
-    assignTraffic<Assignment>(clp);
-  } else if (algo == "bidijkstra") {
-    using Assignment = FrankWolfeAssignment<
-        ObjFunctionT, TravelCostFunctionT, trafficassignment::BiDijkstraAdapter, Graph>;
-    assignTraffic<Assignment>(clp);
-  } else if (algo == "ch") {
-    using Assignment = FrankWolfeAssignment<
-        ObjFunctionT, TravelCostFunctionT, trafficassignment::CHAdapter, Graph>;
-    assignTraffic<Assignment>(clp);
-  } else if (algo == "cch") {
-    using Assignment = FrankWolfeAssignment<
-        ObjFunctionT, TravelCostFunctionT, trafficassignment::CCHAdapter, Graph>;
-    assignTraffic<Assignment>(clp);
-  } else {
-    throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
+  
+  //Edited by Lucas
+  if (ED==0){
+      if (algo == "dijkstra") {
+        using Assignment = FrankWolfeAssignment<
+            ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
+        assignTraffic<Assignment>(clp);
+      } else if (algo == "bidijkstra") {
+        using Assignment = FrankWolfeAssignment<
+            ObjFunctionT, TravelCostFunctionT, trafficassignment::BiDijkstraAdapter, Graph>;
+        assignTraffic<Assignment>(clp);
+      } else if (algo == "ch") {
+        using Assignment = FrankWolfeAssignment<
+            ObjFunctionT, TravelCostFunctionT, trafficassignment::CHAdapter, Graph>;
+        assignTraffic<Assignment>(clp);
+      } else if (algo == "cch") {
+        using Assignment = FrankWolfeAssignment<
+            ObjFunctionT, TravelCostFunctionT, trafficassignment::CCHAdapter, Graph>;
+        assignTraffic<Assignment>(clp);
+      } else {
+        throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
+      }
+  }else{
+      if (algo == "dijkstra") {
+          using Assignment = FrankWolfeAssignment_elastic<
+          ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
+          assignTraffic<Assignment>(clp);
+      } else if (algo == "bidijkstra") {
+          using Assignment = FrankWolfeAssignment_elastic<
+          ObjFunctionT, TravelCostFunctionT, trafficassignment::BiDijkstraAdapter, Graph>;
+          assignTraffic<Assignment>(clp);
+      } else if (algo == "ch") {
+          using Assignment = FrankWolfeAssignment_elastic<
+          ObjFunctionT, TravelCostFunctionT, trafficassignment::CHAdapter, Graph>;
+          assignTraffic<Assignment>(clp);
+      } else if (algo == "cch") {
+          using Assignment = FrankWolfeAssignment_elastic<
+          ObjFunctionT, TravelCostFunctionT, trafficassignment::CCHAdapter, Graph>;
+          assignTraffic<Assignment>(clp);
+      } else {
+          throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
+      }
   }
-}
+    
 
 // Picks the travel cost function according to the command line options.
 template <template <typename> class ObjFunctionT>
@@ -337,6 +375,10 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
     chooseShortestPathAlgo<ObjFunctionT, ModifiedDavidsonFunction>(clp);
   else if (func == "inverse")
     chooseShortestPathAlgo<ObjFunctionT, InverseFunction>(clp);
+  else if (func=="elastic"){//EDITED BY LUCAS
+    chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction_elastic>(clp);
+    std::cout << "custom BPR ELASTIC is used!" << std::endl;
+  }
   else
     throw std::invalid_argument("unrecognized travel cost function -- '" + func + "'");
 }
