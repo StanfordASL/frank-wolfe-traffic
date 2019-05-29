@@ -15,7 +15,8 @@ class ApproxBprFunction {
 		exo_v = Vec4d(exo);
         
         //Lucas
-        edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+  	  std::vector<double> vect(graph.numEdges(),0);
+      edgeTotalShift=vect;//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.

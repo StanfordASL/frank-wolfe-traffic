@@ -12,7 +12,8 @@ class DavidsonFunction {
   // Constructs a Davidson function.
   DavidsonFunction(const GraphT& graph) : graph(graph) {
       //Lucas
-      edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+      std::vector<double> vect(graph.numEdges(),0);
+      edgeTotalShift=vect;//initialized to zero by default
   }
 
   // Returns the travel time on edge e, given the flow x on e.

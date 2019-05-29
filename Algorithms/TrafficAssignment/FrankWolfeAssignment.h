@@ -29,6 +29,7 @@
 
 #define INVERSE_DEMAND_SHIFT 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
 #define VERTEX_POTENTIAL 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
+#define TA_NO_SIMD_LINE_SEARCH
 
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
@@ -78,25 +79,39 @@ class FrankWolfeAssignment {
       //--------------------------------------------------- LUCAS WORK IN PROGRESS -------------------------------------------------
       //Introduce the graph attributes related to the new csv input file
       if(substats.numIterations==0 && isElastic){
-          int isnegative
-          std::vector<double> edgeShift(graph.numEdges(),0);
-          std::vector<double> vertexPotential(graph.numVertices(),0);
+          int tail, head, isnegative;
+          std::vector<double> edgeShift(inputGraph.numEdges(),0);
+          std::vector<double> vertexPotential(inputGraph.numVertices(),0);
+          int vTail, vHead;
+
           //Read the csv files
-          isnegativeFile.read_header(io::ignore_extra_column,"isnegative");
+          isnegativeFile.read_header(io::ignore_extra_column,"edge_tail","edge_head","isnegative");
           //single core
         #ifdef TA_NO_SIMD_LINE_SEARCH
+          //Just to see how the number of edges is actually defined
+          FORALL_EDGES(inputGraph,e){
+            std::cout << "Edge number:" << e << " - Head: " << inputGraph.edgeHead(e) << " - Tail: " << inputGraph.edgeTail_z(e) << std::endl;
+          }
+
           FORALL_EDGES(inputGraph, e){
-              isnegativeFile.read_row(isnegative);
+              isnegativeFile.read_row(tail, head, isnegative);
+              /*
+              std::cout << "isnegative:" << isnegative << std::endl;
+              int edge=inputGraph.uniqueEdgeBetween(tail,head);
+              std::cout << "Edge number:" << edge << " - Head: " << head << " - Tail: " << tail << std::endl;
+              */
               if(isnegative==1){
-                  edgeShift[e]+=-INVERSE_DEMAND_SHIFT;
-                  vTail=inputGraph.edgeTail(e);
-                  vertexPotential[vTail]=VERTEX_POTENTIAL;//-travelCostFunction(e,0)
+                  int negativeEdge=inputGraph.uniqueEdgeBetween(tail,head);
+                  std::cout << "Negative Edge - Head: " << inputGraph.edgeHead(negativeEdge) << "- Tail: " << inputGraph.edgeTail_z(negativeEdge) << std::endl;
+                  edgeShift[negativeEdge]+=-INVERSE_DEMAND_SHIFT;
+                  vHead=inputGraph.edgeHead(negativeEdge);
+                  vertexPotential[vHead]=VERTEX_POTENTIAL;//-travelCostFunction(e,0)
               }
           }
           FORALL_EDGES(inputGraph, e){//not nested in the previous loop because we need the potentialshift to remain 0 until all potentials are computed
               vHead=inputGraph.edgeHead(e);
-              vTail=inputGraph.edgeTail(e);
-              edgeShift[e]+=vertexPotential[vTail]-vertexPotential[vHead]
+              vTail=inputGraph.edgeTail_z(e);
+              edgeShift[e]+=vertexPotential[vHead]-vertexPotential[vTail];
           }
           
           //Transfer the value to the cost function
@@ -106,8 +121,8 @@ class FrankWolfeAssignment {
           std::cout << "Check Initialization" << std::endl;
           FORALL_EDGES(inputGraph,e){
               vHead=inputGraph.edgeHead(e);
-              vTail=inputGraph.edgeTail(e);
-              std::cout << vHead << "->" << vTail << " || Node Potentials: " << vertexPotential[vHead] << " - " << vertexPotential[vTail] << std::endl;
+              vTail=inputGraph.edgeTail_z(e);
+              std::cout << vTail << "->" << vHead << " || Node Potentials: " << vertexPotential[vHead] << " - " << vertexPotential[vTail] << " || edge shift: " << edgeShift[e] << std::endl;
           }
         #endif
           
@@ -342,7 +357,7 @@ class FrankWolfeAssignment {
   //Added by Lucas
   template <int numFields>
   using CsvDialect = io::CSVReader<numFields>;
-  CsvDialect<1> isnegativeFile;
+  CsvDialect<3> isnegativeFile;
   const bool isElastic;
 };
 

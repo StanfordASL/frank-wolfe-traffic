@@ -15,7 +15,8 @@ class UnawareBprFunction {
 		exo_v = Vec4d(exo);
         
         //Lucas
-        edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+  	  std::vector<double> vect(graph.numEdges(),0);
+      edgeTotalShift=vect;//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -45,7 +46,7 @@ class UnawareBprFunction {
 	  else
 	  {
 		  x_new = x;
-		  const double pt = APT * graph.capacity(e); // The point at which we linearize.
+		  const double pt = APT * cap; // The point at which we linearize.
 		  if (x_new <= pt)
 			  return bpr.derivative(e, x_new);
 		  else

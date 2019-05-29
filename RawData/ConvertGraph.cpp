@@ -41,11 +41,11 @@
 
 // A graph data structure encompassing all vertex and edge attributes available for output.
 using VertexAttributes = VertexAttrs<
-    CoordinateAttribute, LatLngAttribute, SequentialVertexIdAttribute, VertexIdAttribute, VertexPotentialAttribute>;
+    CoordinateAttribute, LatLngAttribute, SequentialVertexIdAttribute, VertexIdAttribute>;
 using EdgeAttributes = EdgeAttrs<
     CapacityAttribute, FreeFlowSpeedAttribute, LengthAttribute,
     NumLanesAttribute, OsmRoadCategoryAttribute, RoadGeometryAttribute, SpeedLimitAttribute,
-    TravelTimeAttribute, XatfRoadCategoryAttribute, IsNegativeAttribute, EdgeNegativeShiftAttribute, EdgePotentialShiftAttribute>;
+    TravelTimeAttribute, XatfRoadCategoryAttribute>;
 using GraphT = StaticGraph<VertexAttributes, EdgeAttributes>;
 
 void printUsage() {

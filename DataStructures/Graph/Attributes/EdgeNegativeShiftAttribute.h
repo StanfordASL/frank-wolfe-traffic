@@ -6,7 +6,7 @@
 #include "Tools/Constants.h"
 
 // An attribute associating a travel cost with each edge of a graph.
-class EdgeNegativeShift : public AbstractAttribute<double> {
+class EdgeNegativeShiftAttribute : public AbstractAttribute<double> {
  public:
   // Returns the attribute's default value.
   static Type defaultValue() {
