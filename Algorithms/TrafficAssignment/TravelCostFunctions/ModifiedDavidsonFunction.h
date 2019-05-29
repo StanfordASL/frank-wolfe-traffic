@@ -12,7 +12,7 @@ class ModifiedDavidsonFunction {
   // Constructs a modified Davidson function.
   ModifiedDavidsonFunction(const GraphT& graph) : graph(graph), davidson(graph) {
       //Lucas
-      edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+      edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
   }
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -56,7 +56,7 @@ class ModifiedDavidsonFunction {
   }
     
     //Lucas
-    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+    void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
         edgeTotalShift = inputVectorShift;
     }
 
@@ -64,5 +64,5 @@ class ModifiedDavidsonFunction {
   const GraphT& graph;               // The graph on whose edges we operate.
   DavidsonFunction<GraphT> davidson; // The original Davidson function.
     
-  vector<double> edgeTotalShift;//Lucas
+    std::vector<double> edgeTotalShift;//Lucas
 };

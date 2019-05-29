@@ -13,6 +13,9 @@ class UnawareBprFunction {
 		exo = graph.exogenous();
 		dummy_id = graph.dummyId();
 		exo_v = Vec4d(exo);
+        
+        //Lucas
+        edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -86,7 +89,7 @@ class UnawareBprFunction {
   }
     
     //Lucas
-    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+    void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
         edgeTotalShift = inputVectorShift;
     }
 
@@ -98,5 +101,5 @@ class UnawareBprFunction {
 	int dummy_id;
 	Vec4d exo_v;
     
-    vector<double> edgeTotalShift;//Lucas
+    std::vector<double> edgeTotalShift;//Lucas
 };

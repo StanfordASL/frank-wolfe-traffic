@@ -16,7 +16,7 @@ class InverseFunction {
   // Constructs an inverse travel cost function.
   InverseFunction(const GraphT& graph) : graph(graph) {
       //Lucas
-      edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+      edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
   }
 
   // Returns the travel cost on edge e, given the flow x on e.
@@ -59,12 +59,12 @@ class InverseFunction {
   }
     
     //Lucas
-    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+    void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
         edgeTotalShift = inputVectorShift;
     }
 
  private:
   const GraphT& graph; // The graph on whose edges we operate.
     
-  vector<double> edgeTotalShift;//Lucas
+    std::vector<double> edgeTotalShift;//Lucas
 };

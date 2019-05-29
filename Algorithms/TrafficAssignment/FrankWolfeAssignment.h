@@ -79,8 +79,8 @@ class FrankWolfeAssignment {
       //Introduce the graph attributes related to the new csv input file
       if(substats.numIterations==0 && isElastic){
           int isnegative
-          vector<double> edgeShift(graph.numEdges(),0);
-          vector<double> vertexPotential(graph.numVertices(),0);
+          std::vector<double> edgeShift(graph.numEdges(),0);
+          std::vector<double> vertexPotential(graph.numVertices(),0);
           //Read the csv files
           isnegativeFile.read_header(io::ignore_extra_column,"isnegative");
           //single core

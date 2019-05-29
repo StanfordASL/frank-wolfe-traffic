@@ -14,7 +14,7 @@ class CustomBprFunction {
 		exo_v = Vec4d(exo);
         
         //Lucas
-        edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+        edgeTotalShift(std::vector<double> vect(graph.numEdges(),0));//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -105,7 +105,7 @@ class CustomBprFunction {
   }
     
     //Lucas
-    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+    void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
         edgeTotalShift = inputVectorShift;
     }
 
@@ -116,5 +116,5 @@ class CustomBprFunction {
 	int dummy_id;
 	Vec4d exo_v;
     
-    vector<double> edgeTotalShift;//Lucas
+    std::vector<double> edgeTotalShift;//Lucas
 };
