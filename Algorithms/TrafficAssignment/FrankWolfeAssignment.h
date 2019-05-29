@@ -54,7 +54,8 @@ class FrankWolfeAssignment {
         distanceFile(distFile),
         patternFile(patternFile),
         verbose(verbose),
-        isnegativeFile(negative_filename){
+        isnegativeFile(negative_filename),
+        isElastic((strcmp(negative_filename,"NULL")==0) ? false : true){
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 
 	std::cout << "consider_loss=" << consider_loss << std::endl;
@@ -76,7 +77,7 @@ class FrankWolfeAssignment {
       
       //--------------------------------------------------- LUCAS WORK IN PROGRESS -------------------------------------------------
       //Introduce the graph attributes related to the new csv input file
-      if(substats.numIterations==0 && strcmp(isnegativeFile,"NULL")!=0){
+      if(substats.numIterations==0 && isElastic){
           //Read the csv files
           isnegativeFile.read_header(io::ignore_extra_column,"isnegative");
           //single core
@@ -335,6 +336,7 @@ class FrankWolfeAssignment {
   template <int numFields>
   using CsvDialect = io::CSVReader<numFields>;
   CsvDialect<1> isnegativeFile;
+  const bool isElastic;
 };
 
 // An alias template for a user-equilibrium (UE) traffic assignment.
