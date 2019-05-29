@@ -289,7 +289,7 @@ void assignTraffic(const CommandLineParser& clp) {
 
   
 }
-}
+
 
 // Picks the shortest-path algorithm according to the command line options.
 template <template <typename> class ObjFunctionT, template <typename> class TravelCostFunctionT>
@@ -323,7 +323,6 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
         throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
       }
   }
-}
     
 
 // Picks the travel cost function according to the command line options.

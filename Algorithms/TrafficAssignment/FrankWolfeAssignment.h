@@ -55,7 +55,7 @@ class FrankWolfeAssignment {
         patternFile(patternFile),
         verbose(verbose),
         isnegativeFile(negative_filename),
-        isElastic((strcmp(negative_filename,"NULL")==0) ? false : true){
+        isElastic((strcmp(negative_filename.c_str(),"NULL")==0) ? false : true){
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 
 	std::cout << "consider_loss=" << consider_loss << std::endl;
