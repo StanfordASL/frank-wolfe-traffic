@@ -33,13 +33,19 @@
 #include "Tools/CommandLine/CommandLineParser.h"
 #include "Tools/ContainerHelpers.h"
 
+//Added by Lucas
+#include "DataStructures/Graph/Attributes/IsNegativeAttribute.h"
+#include "DataStructures/Graph/Attributes/VertexPotentialAttribute.h"
+#include "DataStructures/Graph/Attributes/EdgePotentialShiftAttribute.h"
+#include "DataStructures/Graph/Attributes/EdgeNegativeShiftAttribute.h"
+
 // A graph data structure encompassing all vertex and edge attributes available for output.
 using VertexAttributes = VertexAttrs<
-    CoordinateAttribute, LatLngAttribute, SequentialVertexIdAttribute, VertexIdAttribute>;
+    CoordinateAttribute, LatLngAttribute, SequentialVertexIdAttribute, VertexIdAttribute, VertexPotentialAttribute>;
 using EdgeAttributes = EdgeAttrs<
     CapacityAttribute, FreeFlowSpeedAttribute, LengthAttribute,
     NumLanesAttribute, OsmRoadCategoryAttribute, RoadGeometryAttribute, SpeedLimitAttribute,
-    TravelTimeAttribute, XatfRoadCategoryAttribute>;
+    TravelTimeAttribute, XatfRoadCategoryAttribute, IsNegativeAttribute, EdgeNegativeShiftAttribute, EdgePotentialShiftAttribute>;
 using GraphT = StaticGraph<VertexAttributes, EdgeAttributes>;
 
 void printUsage() {
