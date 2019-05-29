@@ -78,29 +78,36 @@ class FrankWolfeAssignment {
       //--------------------------------------------------- LUCAS WORK IN PROGRESS -------------------------------------------------
       //Introduce the graph attributes related to the new csv input file
       if(substats.numIterations==0 && isElastic){
+          int isnegative
+          vector<double> edgeShift(graph.numEdges(),0);
+          vector<double> vertexPotential(graph.numVertices(),0);
           //Read the csv files
           isnegativeFile.read_header(io::ignore_extra_column,"isnegative");
           //single core
         #ifdef TA_NO_SIMD_LINE_SEARCH
           FORALL_EDGES(inputGraph, e){
-              isnegativeFile.read_row(inputGraph.isnegative(e));
-              if(inputGraph.isnegative(e)){
-                  inputGraph.edgeNegativeShift(e)=-INVERSE_DEMAND_SHIFT;
+              isnegativeFile.read_row(isnegative);
+              if(isnegative==1){
+                  edgeShift[e]+=-INVERSE_DEMAND_SHIFT;
                   vTail=inputGraph.edgeTail(e);
-                  inputGraph.vertex_potential(vTail)=VERTEX_POTENTIAL;//-travelCostFunction(e,0)
+                  vertexPotential[vTail]=VERTEX_POTENTIAL;//-travelCostFunction(e,0)
               }
           }
           FORALL_EDGES(inputGraph, e){//not nested in the previous loop because we need the potentialshift to remain 0 until all potentials are computed
               vHead=inputGraph.edgeHead(e);
               vTail=inputGraph.edgeTail(e);
-              inputGraph.edgePotentialShift(e)=inputGraph.vertex_potential(vTail)-inputGraph.vertex_potential(vHead)
+              edgeShift[e]+=vertexPotential[vTail]-vertexPotential[vHead]
           }
+          
+          //Transfer the value to the cost function
+          travelCostFunction.setEdgeShift(edgeShift);
+          
           //print test to check if the attribute has been properly instantiated
           std::cout << "Check Initialization" << std::endl;
           FORALL_EDGES(inputGraph,e){
               vHead=inputGraph.edgeHead(e);
               vTail=inputGraph.edgeTail(e);
-              std::cout << vHead << "->" << vTail << " || Negative? " << inputGraph.isnegative(e) << " || Node Potentials: " << inputGraph.vertex_potential(vHead) << " - " << input.vertex(vTail) << std::endl;
+              std::cout << vHead << "->" << vTail << " || Node Potentials: " << vertexPotential[vHead] << " - " << vertexPotential[vTail] << std::endl;
           }
         #endif
           

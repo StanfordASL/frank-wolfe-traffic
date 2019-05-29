@@ -10,6 +10,8 @@ class ModifiedBprFunction {
   // Constructs a BPR function.
 	ModifiedBprFunction(const GraphT& graph) : graph(graph), bpr(graph) {
 		std::cout << "here" << std::endl;
+        //Lucas
+        edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -51,8 +53,15 @@ class ModifiedBprFunction {
     Vec4d pt =APT * to_double(Vec4i().load(&graph.capacity(e)));
     return bpr.derivative(e, min(x, pt));
   }
+    
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
 	const GraphT& graph; // The graph on whose edges we operate.
 	BprFunction<GraphT> bpr; // The original BPR function.
+    
+    vector<double> edgeTotalShift;//Lucas
 };

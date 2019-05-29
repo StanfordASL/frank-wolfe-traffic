@@ -10,7 +10,10 @@ template <typename GraphT>
 class DavidsonFunction {
  public:
   // Constructs a Davidson function.
-  DavidsonFunction(const GraphT& graph) : graph(graph) {}
+  DavidsonFunction(const GraphT& graph) : graph(graph) {
+      //Lucas
+      edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+  }
 
   // Returns the travel time on edge e, given the flow x on e.
   double operator()(const int e, const double x) const {
@@ -51,7 +54,12 @@ class DavidsonFunction {
     Vec4d capacity = to_double(Vec4i().load(&graph.capacity(e)));
     return time * 0.01 * capacity / pow_const(capacity - x, 2);
   }
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
   const GraphT& graph; // The graph on whose edges we operate.
+  vector<double> edgeTotalShift;//Lucas
 };

@@ -68,6 +68,7 @@ void printUsage() {
       "                        capacity coordinate free_flow_speed lat_lng length\n"
       "                        num_lanes osm_road_category road_geometry\n"
       "                        sequential_vertex_id speed_limit travel_time vertex_id\n"
+      "                        isnegative edgeNegativeShift edgePotentialShift vertex_potential\n" //Added by Lucas
       "                        xatf_road_category\n"
       "  -i <file>         input file(s) without file extension\n"
       "  -o <file>         output file(s) without file extension\n"

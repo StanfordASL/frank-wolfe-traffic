@@ -11,7 +11,10 @@ template <typename GraphT>
 class BprFunction {
  public:
   // Constructs a BPR function.
-  BprFunction(const GraphT& graph) : graph(graph) {}
+  BprFunction(const GraphT& graph) : graph(graph) {
+      //Lucas
+      edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+  }
 
   // Returns the travel time on edge e, given the flow x on e.
   double operator()(const int e, const double x) const {
@@ -49,7 +52,14 @@ class BprFunction {
     Vec4d capacity = to_double(Vec4i().load(&graph.capacity(e)));
     return time * 0.15 * 4 * pow_const(x / capacity, 4 - 1) / capacity;
   }
+    
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
   const GraphT& graph; // The graph on whose edges we operate.
+    
+  vector<double> edgeTotalShift;//Lucas
 };

@@ -84,6 +84,11 @@ class UnawareBprFunction {
 	  // val_real is simply (0,0,0,0), and the correct values are already found in val_fake
 	  return val_fake;
   }
+    
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
   private:
 	const GraphT& graph; // The graph on whose edges we operate.
@@ -92,4 +97,6 @@ class UnawareBprFunction {
 	double exo;
 	int dummy_id;
 	Vec4d exo_v;
+    
+    vector<double> edgeTotalShift;//Lucas
 };

@@ -18,6 +18,9 @@ class CustomBprFunction_elastic {
 		exo = graph.exogenous();
 		dummy_id = graph.dummyId();
 		exo_v = Vec4d(exo);
+        
+        //Lucas
+        edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -31,9 +34,9 @@ class CustomBprFunction_elastic {
 		  x_new = x;
 	  const double pt = APT * cap;
 	  if (x <= pt)
-		  return bpr(e, x_new)+ graph.edgeNegativeShift(e)+graph.edgePotentialShift(e);//to be implemented
+		  return bpr(e, x_new)+ edgeTotalShift[e];//to be implemented
 	  else
-		  return bpr(e, pt) + bpr.derivative(e, pt) * (x_new - pt)+ graph.edgeNegativeShift(e)+graph.edgePotentialShift(e);
+          return bpr(e, pt) + bpr.derivative(e, pt) * (x_new - pt)+ edgeTotalShift[e];
   }
 
   // Returns the derivative of e's travel cost function at x.
@@ -75,7 +78,7 @@ class CustomBprFunction_elastic {
 	else
 		int_old = bpr.integral(e, pt) + (b - pt) * (operator()(e, b) + operator()(e, pt)) / 2;
 
-	return int_new - int_old+b_new*(graph.edgeNegativeShift(e)+graph.edgePotentialShift(e));
+	return int_new - int_old+b_new*(edgeTotalShift[e]);
   }
 
   // Returns the travel times on four consecutive edges starting at e, given the flows x on them.
@@ -106,6 +109,10 @@ class CustomBprFunction_elastic {
 	  Vec4d pt = APT * to_double(Vec4i().load(&graph.capacity(e)));
 	  return bpr.derivative(e, min(x_new, pt));
   }
+    
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
 	const GraphTT& graph; // The graph on whose edges we operate.
@@ -113,4 +120,5 @@ class CustomBprFunction_elastic {
 	double exo;
 	int dummy_id;
 	Vec4d exo_v;
+    vector<double> edgeTotalShift;//Lucas
 };

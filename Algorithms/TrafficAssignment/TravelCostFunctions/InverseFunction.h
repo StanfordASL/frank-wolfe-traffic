@@ -14,7 +14,10 @@ template <typename GraphT>
 class InverseFunction {
  public:
   // Constructs an inverse travel cost function.
-  InverseFunction(const GraphT& graph) : graph(graph) {}
+  InverseFunction(const GraphT& graph) : graph(graph) {
+      //Lucas
+      edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+  }
 
   // Returns the travel cost on edge e, given the flow x on e.
   double operator()(const int e, const double x) const {
@@ -54,7 +57,14 @@ class InverseFunction {
     Vec4d length = to_double(Vec4i().load(&graph.length(e)));
     return 1.0 * length * -155 / pow_const(x + 1, 2);
   }
+    
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
   const GraphT& graph; // The graph on whose edges we operate.
+    
+  vector<double> edgeTotalShift;//Lucas
 };

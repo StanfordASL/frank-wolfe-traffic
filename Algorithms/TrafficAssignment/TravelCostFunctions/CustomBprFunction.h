@@ -12,6 +12,9 @@ class CustomBprFunction {
 		exo = graph.exogenous();
 		dummy_id = graph.dummyId();
 		exo_v = Vec4d(exo);
+        
+        //Lucas
+        edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -100,6 +103,11 @@ class CustomBprFunction {
 	  Vec4d pt = APT * to_double(Vec4i().load(&graph.capacity(e)));
 	  return bpr.derivative(e, min(x_new, pt));
   }
+    
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
 	const GraphTT& graph; // The graph on whose edges we operate.
@@ -107,4 +115,6 @@ class CustomBprFunction {
 	double exo;
 	int dummy_id;
 	Vec4d exo_v;
+    
+    vector<double> edgeTotalShift;//Lucas
 };

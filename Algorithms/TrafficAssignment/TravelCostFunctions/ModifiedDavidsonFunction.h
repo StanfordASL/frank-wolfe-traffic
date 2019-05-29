@@ -10,7 +10,10 @@ template <typename GraphT>
 class ModifiedDavidsonFunction {
  public:
   // Constructs a modified Davidson function.
-  ModifiedDavidsonFunction(const GraphT& graph) : graph(graph), davidson(graph) {}
+  ModifiedDavidsonFunction(const GraphT& graph) : graph(graph), davidson(graph) {
+      //Lucas
+      edgeTotalShift(vector<double> vect(graph.numEdges(),0));//initialized to zero by default
+  }
 
   // Returns the travel time on edge e, given the flow x on e.
   double operator()(const int e, const double x) const {
@@ -51,8 +54,15 @@ class ModifiedDavidsonFunction {
     Vec4d pt = 0.95 * to_double(Vec4i().load(&graph.capacity(e)));
     return davidson.derivative(e, min(x, pt));
   }
+    
+    //Lucas
+    void setEdgeShift(vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        edgeTotalShift = inputVectorShift;
+    }
 
  private:
   const GraphT& graph;               // The graph on whose edges we operate.
   DavidsonFunction<GraphT> davidson; // The original Davidson function.
+    
+  vector<double> edgeTotalShift;//Lucas
 };
