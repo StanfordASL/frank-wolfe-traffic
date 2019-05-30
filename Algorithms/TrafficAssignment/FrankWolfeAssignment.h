@@ -27,8 +27,8 @@
 #include "DataStructures/Graph/Attributes/EdgePotentialShiftAttribute.h"
 #include "DataStructures/Graph/Attributes/EdgeNegativeShiftAttribute.h"
 
-#define INVERSE_DEMAND_SHIFT 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
-#define VERTEX_POTENTIAL 1000 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
+#define INVERSE_DEMAND_SHIFT 80 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
+#define VERTEX_POTENTIAL 90 //arbitrarily defined at the moment, and constant for each demand ==> to be edited later
 #define TA_NO_SIMD_LINE_SEARCH
 
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
@@ -122,7 +122,7 @@ class FrankWolfeAssignment {
           FORALL_EDGES(inputGraph,e){
               vHead=inputGraph.edgeHead(e);
               vTail=inputGraph.edgeTail_z(e);
-              std::cout << vTail << "->" << vHead << " || Node Potentials: " << vertexPotential[vHead] << " - " << vertexPotential[vTail] << " || edge shift: " << edgeShift[e] << std::endl;
+              std::cout << vTail << "->" << vHead << " || Node Potentials: " << vertexPotential[vTail] << " - " << vertexPotential[vHead] << " || edge shift: " << edgeShift[e] << std::endl;
           }
         #endif
           
