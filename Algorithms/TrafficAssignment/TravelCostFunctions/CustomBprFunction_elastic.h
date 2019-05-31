@@ -79,7 +79,7 @@ class CustomBprFunction_elastic {
 	else
 		int_old = bpr.integral(e, pt) + (b - pt) * (operator()(e, b) + operator()(e, pt)) / 2;
 
-	return int_new - int_old+b_new*(edgeTotalShift[e]);
+	return int_new - int_old+(b_new-b)*(edgeTotalShift[e]);
   }
 
   // Returns the travel times on four consecutive edges starting at e, given the flows x on them.

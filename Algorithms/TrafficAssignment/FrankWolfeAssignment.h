@@ -55,7 +55,7 @@ class FrankWolfeAssignment {
         distanceFile(distFile),
         patternFile(patternFile),
         verbose(verbose),
-        isnegativeFile(negative_filename),
+        isnegativeFilename(negative_filename),
         isElastic((strcmp(negative_filename.c_str(),"NULL")==0) ? false : true){
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 
@@ -84,6 +84,9 @@ class FrankWolfeAssignment {
           std::vector<double> vertexPotential(inputGraph.numVertices(),0);
           int vTail, vHead;
 
+          //Added by Lucas
+          
+          CsvDialect<3> isnegativeFile(isnegativeFilename);
           //Read the csv files
           isnegativeFile.read_header(io::ignore_extra_column,"edge_tail","edge_head","isnegative");
           //single core
@@ -354,10 +357,11 @@ class FrankWolfeAssignment {
   std::ofstream& patternFile;            // The output file containing the flow patterns.
   const bool verbose;                    // Should informative messages be displayed?
     
-  //Added by Lucas
+
   template <int numFields>
   using CsvDialect = io::CSVReader<numFields>;
-  CsvDialect<3> isnegativeFile;
+  
+  const std::string isnegativeFilename;
   const bool isElastic;
 };
 

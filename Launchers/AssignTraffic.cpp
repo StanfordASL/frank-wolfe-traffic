@@ -274,10 +274,10 @@ void assignTraffic(const CommandLineParser& clp) {
       patternFile << "# Main file: " << csvFilename << ".csv\n";
     patternFile << "numIteration,tail,head,freeFlowCost,actualCost,capacity,flow\n";
   }
-    
-    
+  
   FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, clp.isSet("v"), clp.isSet("loss"),isnegativeFilename);
-    
+
+
   if (csv.is_open()) {
         csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
         csv << "iteration,sampling_interval,customization_time,query_time,line_search_time,total_time,";
