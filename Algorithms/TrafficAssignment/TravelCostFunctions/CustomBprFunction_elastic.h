@@ -22,6 +22,10 @@ class CustomBprFunction_elastic {
         //Lucas
   	  std::vector<double> vect(graph.numEdges(),0);
       edgeTotalShift=vect;//initialized to zero by default
+        std::cout << " TEST INITIALIZATION " << std::endl;
+        FORALL_EDGES(graph,e){
+            std::cout << "Edge Number:" << e << " - Edge Shift:" << edgeTotalShift[e] << end;
+        }
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
