@@ -119,6 +119,8 @@ class FrankWolfeAssignment {
           
           //Transfer the value to the cost function
           travelCostFunction.setEdgeShift(edgeShift);
+
+          
           
           //print test to check if the attribute has been properly instantiated
           std::cout << "Check Initialization" << std::endl;
@@ -133,6 +135,13 @@ class FrankWolfeAssignment {
       
       //--------------------------------------------------- END LUCAS WORK IN PROGRESS -------------------------------------------------
 
+
+      std::cout << "----------------------" << std::endl;
+      std::cout << "ITERATION:: " << substats.numIterations << std::endl;
+      FORALL_EDGES(inputGraph,e){
+      	std::cout << e << " - " << travelCostFunction.getEdgeShift(e) << std::endl;
+      }
+      std::cout << "----------------------" << std::endl;
     // Initialization.
     Timer timer;
 #ifdef TA_NO_SIMD_LINE_SEARCH

@@ -22,16 +22,15 @@ class CustomBprFunction_elastic {
         //Lucas
   	  std::vector<double> vect(graph.numEdges(),0);
       edgeTotalShift=vect;//initialized to zero by default
-        std::cout << " TEST INITIALIZATION " << std::endl;
-        FORALL_EDGES(graph,e){
-            std::cout << "Edge Number:" << e << " - Edge Shift:" << edgeTotalShift[e] << end;
-        }
+      std::cout << "CONSTRUCTING COST FUNCTION" << std::endl;
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
   double operator()(const int e, const double x) const {
 	  double x_new;
 	  const double cap = graph.capacity(e);
+
+	  std::cout << "edge" << e << "|| Edge Cost in operator(): " << edgeTotalShift[e] << std::endl;
 	  
 	  if (graph.edgeReal(e))
 		  x_new = x + exo*cap;
@@ -39,7 +38,7 @@ class CustomBprFunction_elastic {
 		  x_new = x;
 	  const double pt = APT * cap;
 	  if (x <= pt)
-		  return bpr(e, x_new)+ edgeTotalShift[e];//to be implemented
+		  return bpr(e, x_new)+ edgeTotalShift[e];
 	  else
           return bpr(e, pt) + bpr.derivative(e, pt) * (x_new - pt)+ edgeTotalShift[e];
   }
@@ -78,12 +77,24 @@ class CustomBprFunction_elastic {
     else
       int_new = bpr.integral(e, pt) + (b_new - pt) * (operator()(e, b_new) + operator()(e, pt)) / 2;
 
+	if (b==b_new){
+	  std::cout << "edge:" << e << "|| edge shift: "<< edgeTotalShift[e] <<" || integral value:" << int_new+b_new*edgeTotalShift[e] << std::endl;
+
+	  return int_new+b_new*edgeTotalShift[e];
+	}else{
+
 	if (b <= pt)
 		int_old =  bpr.integral(e, b);
 	else
 		int_old = bpr.integral(e, pt) + (b - pt) * (operator()(e, b) + operator()(e, pt)) / 2;
 
-	return int_new - int_old+(b_new-b)*(edgeTotalShift[e]);
+	double result=int_new+(b_new)*(edgeTotalShift[e]);
+
+	std::cout << "int_old: " << int_old << std::endl;
+	return result;
+	}
+
+	
   }
 
   // Returns the travel times on four consecutive edges starting at e, given the flows x on them.
@@ -117,6 +128,10 @@ class CustomBprFunction_elastic {
     
     void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
         edgeTotalShift = inputVectorShift;
+    }
+
+    double getEdgeShift(const int e){
+    	return edgeTotalShift[e];
     }
 
  private:

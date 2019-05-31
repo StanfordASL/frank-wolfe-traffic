@@ -60,6 +60,9 @@ class ModifiedDavidsonFunction {
     void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
         edgeTotalShift = inputVectorShift;
     }
+    double getEdgeShift(const int e){
+      return edgeTotalShift[e];
+    }
 
  private:
   const GraphT& graph;               // The graph on whose edges we operate.
