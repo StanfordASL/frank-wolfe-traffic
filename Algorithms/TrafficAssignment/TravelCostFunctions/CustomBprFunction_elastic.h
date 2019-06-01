@@ -30,7 +30,7 @@ class CustomBprFunction_elastic {
 	  double x_new;
 	  const double cap = graph.capacity(e);
 
-	  std::cout << "edge" << e << "|| Edge Cost in operator(): " << edgeTotalShift[e] << std::endl;
+	  std::cout << "edge" << e << "|| Edge Shift in operator(): " << edgeTotalShift[e] << std::endl;
 	  
 	  if (graph.edgeReal(e))
 		  x_new = x + exo*cap;

@@ -32,6 +32,10 @@ class UserEquilibrium {
     return travelCostFunction(e, x);
   }
 
+  void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        travelCostFunction.setEdgeShift(inputVectorShift);
+    }
+
  private:
   TravelCostFunctionT travelCostFunction; // A functor returning the travel cost on an edge.
 };

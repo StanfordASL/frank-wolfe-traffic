@@ -32,6 +32,10 @@ class SystemOptimum {
     return travelCostFunction(e, x) + x * travelCostFunction.derivative(e, x);
   }
 
+  void setEdgeShift(std::vector<double> inputVectorShift){//Accessor to edit the vectorshift
+        travelCostFunction.setEdgeShift(inputVectorShift);
+    }
+
  private:
   TravelCostFunctionT travelCostFunction; // A functor returning the travel cost on an edge.
 };

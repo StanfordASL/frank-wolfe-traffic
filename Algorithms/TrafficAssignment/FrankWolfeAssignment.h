@@ -119,6 +119,7 @@ class FrankWolfeAssignment {
           
           //Transfer the value to the cost function
           travelCostFunction.setEdgeShift(edgeShift);
+          objFunction.setEdgeShift(edgeShift);
 
           
           
@@ -136,12 +137,7 @@ class FrankWolfeAssignment {
       //--------------------------------------------------- END LUCAS WORK IN PROGRESS -------------------------------------------------
 
 
-      std::cout << "----------------------" << std::endl;
-      std::cout << "ITERATION:: " << substats.numIterations << std::endl;
-      FORALL_EDGES(inputGraph,e){
-      	std::cout << e << " - " << travelCostFunction.getEdgeShift(e) << std::endl;
-      }
-      std::cout << "----------------------" << std::endl;
+      
     // Initialization.
     Timer timer;
 #ifdef TA_NO_SIMD_LINE_SEARCH
@@ -214,13 +210,24 @@ class FrankWolfeAssignment {
     }
 
     do {
+
+    	std::cout << "----------------------" << std::endl;
+      std::cout << "ITERATION:: " << substats.numIterations << std::endl;
+      FORALL_EDGES(inputGraph,e){
+      	std::cout << e << " - " << travelCostFunction.getEdgeShift(e) << std::endl;
+      }
+      std::cout << "----------------------" << std::endl;
+
       stats.startIteration();
       Timer timer;
 
       // Update travel costs.
 #ifdef TA_NO_SIMD_LINE_SEARCH
-      FORALL_EDGES(inputGraph, e)
+      std::cout << "TEST 1" << std::endl;
+      FORALL_EDGES(inputGraph, e){
+      	std::cout << "coucou" << std::endl;
         inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
+    }
 #else
       FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
         const Vec4d flow = Vec4d().load(&trafficFlows[e]);
@@ -235,7 +242,9 @@ class FrankWolfeAssignment {
       // Direction finding.
       const int interval = substats.numIterations < samplingIntervals.size() ?
           samplingIntervals[substats.numIterations] : 1;
+      std::cout << "TEST 2" << std::endl;
       allOrNothingAssignment.run(interval);
+      std::cout << "TEST 3" << std::endl;
 
       // Line search.
       const double alpha = bisectionMethod([this](const double alpha) {
@@ -245,6 +254,7 @@ class FrankWolfeAssignment {
           const double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
           sum += direction * objFunction.getEdgeWeight(e, trafficFlows[e] + alpha * direction);
         }
+        std::cout << "TEST 4" << std::endl;
         return sum;
 #else
         Vec4d sum = 0;
@@ -264,6 +274,7 @@ class FrankWolfeAssignment {
       // Move along the descent direction.
 #ifdef TA_NO_SIMD_LINE_SEARCH
       FORALL_EDGES(inputGraph, e) {
+      	std::cout<< "hello" <<std::endl;
         const double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
         trafficFlows[e] = trafficFlows[e] + alpha * direction;
         stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
