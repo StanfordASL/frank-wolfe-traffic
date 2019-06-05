@@ -36,6 +36,10 @@ class SystemOptimum {
         travelCostFunction.setEdgeShift(inputVectorShift);
     }
 
+  void setEdgeRebalancers(std::vector<double> edgeRebalancers){//Accessor to edit the edgerebalancers
+        travelCostFunction.setEdgeRebalancers(edgeRebalancers);
+    }
+
  private:
   TravelCostFunctionT travelCostFunction; // A functor returning the travel cost on an edge.
 };
