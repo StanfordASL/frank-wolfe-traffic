@@ -17,6 +17,8 @@ class ApproxBprFunction {
         //Lucas
   	  std::vector<double> vect(graph.numEdges(),0);
       edgeTotalShift=vect;//initialized to zero by default
+        std::vector<double> vect2(graph.numEdges(),-1);
+        edgeRebalancers=vect2;
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -125,6 +127,10 @@ class ApproxBprFunction {
     double getEdgeShift(const int e){
     	return edgeTotalShift[e];
     }
+    
+    void setEdgeRebalancers(std::vector<double> inputEdgeRebalancers){//Accessor to edit the edgerebalancers
+        edgeRebalancers = inputEdgeRebalancers;
+    }
 
 
   private:
@@ -136,4 +142,5 @@ class ApproxBprFunction {
 	Vec4d exo_v;
     
     std::vector<double> edgeTotalShift;//Lucas
+    std::vector<double> edgeRebalancers;
 };
