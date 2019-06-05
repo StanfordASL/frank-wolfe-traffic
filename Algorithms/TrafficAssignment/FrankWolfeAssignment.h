@@ -79,16 +79,17 @@ class FrankWolfeAssignment {
       //--------------------------------------------------- LUCAS WORK IN PROGRESS -------------------------------------------------
       //Introduce the graph attributes related to the new csv input file
       if(substats.numIterations==0 && isElastic){
-          int tail, head, isnegative;
+          int tail, head, isnegative,cost_tail,cost_head;
           std::vector<double> edgeShift(inputGraph.numEdges(),0);
           std::vector<double> vertexPotential(inputGraph.numVertices(),0);
+          std::vector<double> edgeRebalancers(inputGraph.numEdges(),-1);
           int vTail, vHead;
 
           //Added by Lucas
           
-          CsvDialect<3> isnegativeFile(isnegativeFilename);
+          CsvDialect<5> isnegativeFile(isnegativeFilename);
           //Read the csv files
-          isnegativeFile.read_header(io::ignore_extra_column,"edge_tail","edge_head","isnegative");
+          isnegativeFile.read_header(io::ignore_extra_column,"edge_tail","edge_head","isnegative","cost_tail","cost_head");
           //single core
         #ifdef TA_NO_SIMD_LINE_SEARCH
           //Just to see how the number of edges is actually defined
@@ -97,19 +98,24 @@ class FrankWolfeAssignment {
           }
 
           FORALL_EDGES(inputGraph, e){
-              isnegativeFile.read_row(tail, head, isnegative);
+              isnegativeFile.read_row(tail, head, isnegative,cost_tail,cost_head);
               /*
               std::cout << "isnegative:" << isnegative << std::endl;
               int edge=inputGraph.uniqueEdgeBetween(tail,head);
               std::cout << "Edge number:" << edge << " - Head: " << head << " - Tail: " << tail << std::endl;
               */
-              if(isnegative==1){
+              if(isnegative==-1){//Edge is negative
                   int negativeEdge=inputGraph.uniqueEdgeBetween(tail,head);
-                  std::cout << "Negative Edge - Head: " << inputGraph.edgeHead(negativeEdge) << "- Tail: " << inputGraph.edgeTail_z(negativeEdge) << std::endl;
+                  //std::cout << "Negative Edge - Head: " << inputGraph.edgeHead(negativeEdge) << "- Tail: " << inputGraph.edgeTail_z(negativeEdge) << std::endl;
                   edgeShift[negativeEdge]+=-INVERSE_DEMAND_SHIFT;
                   vHead=inputGraph.edgeHead(negativeEdge);
                   vertexPotential[vHead]=VERTEX_POTENTIAL;//-travelCostFunction(e,0)
               }
+              else if(isnegative==-2){//Edge has to have its cost adapted
+                  int costEdge=inputGraph.uniqueEdgeBetween(cost_tail,cost_head);
+                  edgeRebalancers[e]=costEdge;
+              }
+              
           }
           FORALL_EDGES(inputGraph, e){//not nested in the previous loop because we need the potentialshift to remain 0 until all potentials are computed
               vHead=inputGraph.edgeHead(e);
@@ -120,6 +126,7 @@ class FrankWolfeAssignment {
           //Transfer the value to the cost function
           travelCostFunction.setEdgeShift(edgeShift);
           objFunction.setEdgeShift(edgeShift);
+          travelCostFunction.setEdgeRebalancers(edgeRebalancers);
 
           
           
