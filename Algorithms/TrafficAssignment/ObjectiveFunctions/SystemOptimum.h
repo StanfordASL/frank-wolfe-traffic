@@ -40,6 +40,10 @@ class SystemOptimum {
         travelCostFunction.setEdgeRebalancers(edgeRebalancers);
     }
 
+  void updateTrafficFlows(AlignedVector<double> inputTrafficFlows){
+        travelCostFunction.updateTrafficFlows(inputTrafficFlows);
+    }
+
  private:
   TravelCostFunctionT travelCostFunction; // A functor returning the travel cost on an edge.
 };

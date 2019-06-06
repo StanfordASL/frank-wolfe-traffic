@@ -24,17 +24,23 @@ class CustomBprFunction_elastic {
         edgeTotalShift=vect;//initialized to zero by default
         std::vector<double> vect2(graph.numEdges(),-1);
         edgeRebalancers=vect2;
-        std:vector<double> vect3(graph.numEdges(),0)
-        trafficFlows=vect3;
+      AlignedVector<double> vect3(graph.numEdges(),0);
+      trafficFlows=vect3;
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
   double operator()(const int e, const double x) const {
       
       if (edgeRebalancers[e]!=-1){
-          std::cout << "I am heeeeeeere" << std::endl;
-          std::cout << "Testing operator() travel cost (e): " << operator()(edgeRebalancers[e],trafficFlows[edgeRebalancers[e]]) << std::endl;
-          return operator()(edgeRebalancers[e],trafficFlows[edgeRebalancers[e]]);//surely update the derivative too
+      	/*
+          FORALL_EDGES(graph,e){
+          	std::cout << e << "===>>>" << trafficFlows[e] << std::endl;
+          }
+          */
+      	std::cout << "edge " << e <<" is considered rebalacing edge" << std::endl;
+      	double result=operator()(edgeRebalancers[e],trafficFlows[edgeRebalancers[e]]);
+      	std::cout<<"we are returning the cost of edge " << edgeRebalancers[e]<<" : "<< result << std::endl;
+          return result;//surely update the derivative too
       }
       
           
@@ -149,7 +155,7 @@ class CustomBprFunction_elastic {
         edgeRebalancers = inputEdgeRebalancers;
     }
     
-    void updateTrafficFlows(std::vector<double> inputTrafficFlows){
+    void updateTrafficFlows(AlignedVector<double> inputTrafficFlows){
         trafficFlows=inputTrafficFlows;
     }
 
@@ -161,5 +167,5 @@ class CustomBprFunction_elastic {
 	Vec4d exo_v;
     std::vector<double> edgeTotalShift;//Lucas
     std::vector<double> edgeRebalancers;
-    std::vector<double> trafficFlows;
+    AlignedVector<double> trafficFlows;
 };

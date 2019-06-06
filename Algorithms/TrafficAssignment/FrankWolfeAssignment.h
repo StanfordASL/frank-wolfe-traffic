@@ -94,10 +94,10 @@ class FrankWolfeAssignment {
         #ifdef TA_NO_SIMD_LINE_SEARCH
           //Just to see how the number of edges is actually defined
           FORALL_EDGES(inputGraph,e){
-            std::cout << "Edge number:" << e << " - Head: " << inputGraph.edgeHead(e) << " - Tail: " << inputGraph.edgeTail_z(e) << std::endl;
+            std::cout << "Edge number:" << e  << " - Tail: " << inputGraph.edgeTail_z(e) << " - Head: " << inputGraph.edgeHead(e) << std::endl;
           }
 
-          FORALL_EDGES(inputGraph, e){
+          FORALL_EDGES(inputGraph, e){//not sure this loop is needed
               isnegativeFile.read_row(tail, head, isnegative,cost_tail,cost_head);
               /*
               std::cout << "isnegative:" << isnegative << std::endl;
@@ -113,7 +113,10 @@ class FrankWolfeAssignment {
               }
               else if(isnegative==-2){//Edge has to have its cost adapted
                   int costEdge=inputGraph.uniqueEdgeBetween(cost_tail,cost_head);
-                  edgeRebalancers[e]=costEdge;
+                  int rebalancingEdge=inputGraph.uniqueEdgeBetween(tail,head);
+                  edgeRebalancers[rebalancingEdge]=costEdge;
+
+                  std::cout << "The rebalancingEdge is: " << rebalancingEdge << "|| The other edge is: " << costEdge << std::endl;
               }
               
           }
@@ -127,7 +130,7 @@ class FrankWolfeAssignment {
           travelCostFunction.setEdgeShift(edgeShift);
           objFunction.setEdgeShift(edgeShift);
           travelCostFunction.setEdgeRebalancers(edgeRebalancers);
-
+          objFunction.setEdgeRebalancers(edgeRebalancers);
           
           
           //print test to check if the attribute has been properly instantiated
@@ -232,9 +235,11 @@ class FrankWolfeAssignment {
 #ifdef TA_NO_SIMD_LINE_SEARCH
       std::cout << "TEST 1" << std::endl;
       travelCostFunction.updateTrafficFlows(trafficFlows);
+      objFunction.updateTrafficFlows(trafficFlows);
       FORALL_EDGES(inputGraph, e){
       	std::cout << "coucou" << std::endl;
         inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
+        std::cout << e << " ----> " << trafficFlows[e] << std::endl;
           
     }
 #else

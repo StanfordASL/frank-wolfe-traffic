@@ -38,6 +38,9 @@ class UserEquilibrium {
     void setEdgeRebalancers(std::vector<double> edgeRebalancers){//Accessor to edit the edgerebalancers
         travelCostFunction.setEdgeRebalancers(edgeRebalancers);
     }
+    void updateTrafficFlows(AlignedVector<double> inputTrafficFlows){
+        travelCostFunction.updateTrafficFlows(inputTrafficFlows);
+    }
 
  private:
   TravelCostFunctionT travelCostFunction; // A functor returning the travel cost on an edge.
