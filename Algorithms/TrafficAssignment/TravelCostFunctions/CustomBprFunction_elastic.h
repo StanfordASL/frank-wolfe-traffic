@@ -24,6 +24,8 @@ class CustomBprFunction_elastic {
         edgeTotalShift=vect;//initialized to zero by default
         std::vector<double> vect2(graph.numEdges(),-1);
         edgeRebalancers=vect2;
+        std:vector<double> vect3(graph.numEdges(),0)
+        trafficFlows=vect3;
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -31,8 +33,8 @@ class CustomBprFunction_elastic {
       
       if (edgeRebalancers[e]!=-1){
           std::cout << "I am heeeeeeere" << std::endl;
-          std::cout << "Testing Graph travel cost (e): " << graph.travelCost(edgeRebalancers[e]) << std::endl;
-          return graph.travelCost(edgeRebalancers[e]);
+          std::cout << "Testing operator() travel cost (e): " << operator()(edgeRebalancers[e],trafficFlows[edgeRebalancers[e]]) << std::endl;
+          return operator()(edgeRebalancers[e],trafficFlows[edgeRebalancers[e]]);//surely update the derivative too
       }
       
           
@@ -146,6 +148,10 @@ class CustomBprFunction_elastic {
     void setEdgeRebalancers(std::vector<double> inputEdgeRebalancers){//Accessor to edit the edgerebalancers
         edgeRebalancers = inputEdgeRebalancers;
     }
+    
+    void updateTrafficFlows(std::vector<double> inputTrafficFlows){
+        trafficFlows=inputTrafficFlows;
+    }
 
  private:
 	const GraphTT& graph; // The graph on whose edges we operate.
@@ -155,4 +161,5 @@ class CustomBprFunction_elastic {
 	Vec4d exo_v;
     std::vector<double> edgeTotalShift;//Lucas
     std::vector<double> edgeRebalancers;
+    std::vector<double> trafficFlows;
 };

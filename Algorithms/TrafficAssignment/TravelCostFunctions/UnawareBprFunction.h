@@ -19,6 +19,8 @@ class UnawareBprFunction {
       edgeTotalShift=vect;//initialized to zero by default
         std::vector<double> vect2(graph.numEdges(),-1);
         edgeRebalancers=vect2;
+    std:vector<double> vect3(graph.numEdges(),0)
+        trafficFlows=vect3;
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -114,4 +116,5 @@ class UnawareBprFunction {
     
     std::vector<double> edgeTotalShift;//Lucas
     std::vector<double> edgeRebalancers;
+    std::vector<double> trafficFlows;
 };

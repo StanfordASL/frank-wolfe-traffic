@@ -231,9 +231,11 @@ class FrankWolfeAssignment {
       // Update travel costs.
 #ifdef TA_NO_SIMD_LINE_SEARCH
       std::cout << "TEST 1" << std::endl;
+      travelCostFunction.updateTrafficFlows(trafficFlows);
       FORALL_EDGES(inputGraph, e){
       	std::cout << "coucou" << std::endl;
         inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
+          
     }
 #else
       FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
