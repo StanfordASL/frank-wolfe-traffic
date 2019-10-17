@@ -19,4 +19,4 @@ def cost_per_edge(alpha,beta,phi_vec,flow_vec,kappa_vec,K_vec):
     return c
 
 def TotalCost(alpha,beta,phi_vec,flow_vec,kappa_vec,K_vec):
-    return cp.sum(BPR_int(alpha,beta,phi_vec,flow_vec,kappa_vec)-K_vec*flow_vec)
+    return np.sum(BPR_int(alpha,beta,phi_vec,flow_vec,kappa_vec)-K_vec*flow_vec)
