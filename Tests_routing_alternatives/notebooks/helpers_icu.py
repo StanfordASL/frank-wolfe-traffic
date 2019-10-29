@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 def BPR_int(phi,x,kappa,alpha=0.15,beta=4):
+    return phi*(x+alpha/(beta+1)*cp.power(x,(beta+1))/np.power(kappa,beta))
+
+#returns the value of BPR int, not just an expression as is the case above
+def BPR_int_val(phi,x,kappa,alpha=0.15,beta=4):
     return phi*(x+alpha/(beta+1)*np.power(x,(beta+1))/np.power(kappa,beta))
 
 
@@ -24,15 +28,22 @@ def cost_per_edge(alpha,beta,phi_vec,flow_vec,kappa_vec,K_vec):
     c=BPR(alpha,beta,phi_vec,flow_vec,kappa_vec)-K_vec
     return c
 
-def plot_edge_attrs(G_list,attrs):
+def plot_edge_attrs(G_list,y_list,attrs):
     G_=G_list[0]
-    f,axes=plt.subplots(len(G_.edges()),len(attrs),figsize=(18,5*len(G_.edges())))
+    _,axes=plt.subplots(len(G_.edges()),len(attrs),figsize=(20,5*len(G_.edges())))
     i=0
     for e in G_.edges():
         for j in range(len(attrs)):
             att=[]
-            for G in G_list: 
-                att.append(G[e[0]][e[1]][attrs[j]])
+            if attrs[j]=="y_m":
+                for y_k in y_list:
+                    att.append(y_k[e,'f_m'])
+            elif attrs[j]=="y_r":
+                for y_k in y_list:
+                    att.append(y_k[e,'f_r']) 
+            else:
+                for G in G_list: 
+                    att.append(G[e[0]][e[1]][attrs[j]])
             axes[i,j].plot(att,'--o',label=attrs[j])
             axes[i,j].grid(True)
             axes[i,j].set_xlabel('Iteration #')
@@ -63,3 +74,18 @@ def plot_node_attrs(G_list,attrs):
                 axes[i,j].set_title(' node : ' + str(n))
                 axes[i,j].legend()
         i+=1
+
+####################################################################
+########### DEBUG HELPERS 
+####################################################################
+
+def disp_both_costs(G):
+
+    print("Cost for dummy edge: ", G['1']['2_p']['cost'])
+    print("Cost for normal edge (1,2),(2,2_p): ", G['1']['2']['cost'], " --- ",G['2']['2_p']['cost'])
+    print("Cost for normal edge (1,2,2_p): ", G['1']['2']['cost']+G['2']['2_p']['cost'])
+
+def print_final_flows(G_k):
+    G_end=G_k[-1]
+    for e in G_end.edges():
+        print(e," : ",G_end[e[0]][e[1]]['f_m']+G_end[e[0]][e[1]]['f_r'])

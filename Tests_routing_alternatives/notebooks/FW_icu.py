@@ -6,14 +6,24 @@ from helpers_icu import *
 
 
 
-def init_flows(G):
-    for e in G.edges:
-        if e[1]=='R':
-            G[e[0]][e[1]]['f_m']=0
-            G[e[0]][e[1]]['f_r']=G[e[0]][e[1]]['k']
-        else:
-            G[e[0]][e[1]]['f_m']=0
-            G[e[0]][e[1]]['f_r']=0 
+
+# def init_flows(G,OD):
+#     for e in G.edges:
+#         if e[1]=='R':
+#             G[e[0]][e[1]]['f_m']=0
+#             G[e[0]][e[1]]['f_r']=0 #G[e[0]][e[1]]['k'] #The initialization cannot work if the dummy edges are full in the beginning? 
+#         else:
+#             G[e[0]][e[1]]['f_m']=0
+#             G[e[0]][e[1]]['f_r']=0 
+#     return G
+
+def init_flows(G,OD):
+    #Initiliaze the flows, with a feasible solution
+    #still unclear whether we need to initialize the rebalancers appropriately too
+    for (o,d) in OD.keys():
+        path=nx.shortest_path(G,source=o,target=d,weight='cost')
+        for i in range(len(path)-1):
+            G[path[i]][path[i+1]]['f_m']+=OD[o,d]
     return G
 
 def AoN(G,OD):
@@ -39,6 +49,8 @@ def AoN(G,OD):
 
 def FW(G_0,OD,edge_list,dummy_nodes):
     
+    y_list=[]
+
     G_list=[]
     G_list.append(G_0)
     i=1
@@ -50,17 +62,18 @@ def FW(G_0,OD,edge_list,dummy_nodes):
         ri_k,G_crt=estimate_ri_k(G_crt,dummy_nodes)
         OD=update_OD(OD,ri_k,dummy_nodes)
         G_crt=update_capacities(G_crt,ri_k)
+        # disp_both_costs(G_crt)#debug helper
         print("oD:", OD)
         y_k=AoN(G_crt,OD)
         # print("Y_K:", y_k)
         a_k=line_search(G_crt,y_k,edge_list)
         print('ALPHA:', a_k)
         G_crt=update_flows(G_crt,y_k,a_k,edge_list)
-        G_crt=update_costs(G_crt, 80)
         G_k=G_crt
         G_list.append(G_k)
+        y_list.append(y_k)
         i+=1
-    return G_list,OD
+    return G_list,y_list,OD
 
 def estimate_ri_k(G,dummy_nodes):
     ri_k=dict()
@@ -113,25 +126,39 @@ def Total_Cost(G,y_k,a_k,edge_list):
         #retrieve parameters to compute the BPR
         phi=G[e[0]][e[1]]['phi']
         k=G[e[0]][e[1]]['k']
-        sign=G[e[0]][e[1]]['sign']
+        # sign=G[e[0]][e[1]]['sign']
         
-        F_E+=BPR_int(phi,flow_tmp,k,alpha=0.15,beta=4)#I am assuming there will be syntaxic problems there
+        F_E+=BPR_int(phi,flow_tmp,k)#I am assuming there will be syntaxic problems there
         
         
         #this has to be included because it is directly included in the definition of the cost function
         if G[e[0]][e[1]]['sign']==(-1): #we have a negative edge
             F_E-=flow_tmp*80#INVERSE_DEMAND_SHIFT
         
-
+        # not entirely sure this needs to be here
         # if 'pot' in G.nodes[e[1]]:
         #     F_E+=G.nodes[e[1]]['pot']*flow_tmp
             
+    return F_E
+
+def debug_Total_Cost(G,y_k,a_k,edge_list):
+    F_E=0
+    e=('1','2')
+    tgt_val=3
+    x_k_e=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r'] # retrieve the flow, total
+    y_k_e=y_k[(e[0],e[1]),'f_m']+y_k[(e[0],e[1]),'f_r'] #retrieve the flow from the manual assignment, total
+    
+    flow_tmp=x_k_e+a_k*(y_k_e-x_k_e)
+
+    F_E=cp.power(flow_tmp-tgt_val,2)
+
     return F_E
 
 def line_search(G,y_k,edge_list):
     a_k=cp.Variable()
     constraints=[a_k>=0, a_k<=1]
     obj=Total_Cost(G,y_k,a_k,edge_list)
+    # obj=debug_Total_Cost(G,y_k,a_k,edge_list)
     # print(obj)
     prob=cp.Problem(cp.Minimize(obj),constraints)
     prob.solve(verbose=False)
