@@ -79,13 +79,34 @@ def plot_node_attrs(G_list,attrs):
 ########### DEBUG HELPERS 
 ####################################################################
 
-def disp_both_costs(G):
+def disp_costs(G):
 
     print("Cost for dummy edge: ", G['1']['2_p']['cost'])
     print("Cost for normal edge (1,2),(2,2_p): ", G['1']['2']['cost'], " --- ",G['2']['2_p']['cost'])
     print("Cost for normal edge (1,2,2_p): ", G['1']['2']['cost']+G['2']['2_p']['cost'])
+    print("Cost for 1-R: ", G['1']['R']['cost'])
+    print("Cost for 2-R: ", G['2']['R']['cost'])
 
 def print_final_flows(G_k):
     G_end=G_k[-1]
     for e in G_end.edges():
         print(e," : ",G_end[e[0]][e[1]]['f_m']+G_end[e[0]][e[1]]['f_r'])
+
+def print_final_cost(G_k):
+    G_end=G_k[-1]
+    for e in G_end.edges():
+        print(e," : ",G_end[e[0]][e[1]]['cost'])
+
+def sanity_check_N(G_k):
+    G_end=G_k[-1]
+    print("1 to 2: ", G_end['1']['2_p']['f_m']+G_end['1']['2']['f_m'])
+    print("2 to 1: ", G_end['2']['1_p']['f_m']+G_end['2']['1']['f_m'])
+            
+            
+def sanity_check_cost(G_k):
+    G_end=G_k[-1]
+    print("1 to 2: ", G_end['1']['2_p']['cost']," ===== ", G_end['1']['2']['cost']+G_end['2']['2_p']['cost'])
+    print("2 to 1: ", G_end['2']['1_p']['cost']," ===== ", G_end['2']['1']['cost']+G_end['1']['1_p']['cost'])
+        
+    
+    

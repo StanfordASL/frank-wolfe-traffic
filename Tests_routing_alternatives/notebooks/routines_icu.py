@@ -7,11 +7,17 @@ import numpy as np
 
 #sign not necessary (think about what is actually D-1 and about the fact that it has a negative sign in front)
 def update_costs(G,INVERSE_DEMAND_SHIFT):
+    UPPER_LIMIT=10**22
+
     for e in G.edges:
         x=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r']
         phi=G[e[0]][e[1]]['phi']
         k=G[e[0]][e[1]]['k']
         G[e[0]][e[1]]['cost']=BPR(phi,x,k)
+
+        if k<10**-5:#we eliminate the edges with a too high cost from the equation
+            G[e[0]][e[1]]['cost']=UPPER_LIMIT
+            continue
 
         # ### debug
         # if e[0]=='1' and e[1] =='2':

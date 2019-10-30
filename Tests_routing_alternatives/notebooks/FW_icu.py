@@ -17,13 +17,51 @@ from helpers_icu import *
 #             G[e[0]][e[1]]['f_r']=0 
 #     return G
 
+# def init_flows(G,OD,dummy_nodes,opt=1):
+#     #Initiliaze the flows, with a feasible solution
+#     #still unclear whether we need to initialize the rebalancers appropriately too
+#     if opt==1:
+#         for (o,d) in OD.keys():
+#             #assign to dummy edge
+#             G[o][d]['f_m']+=OD[o,d]
+#             new_o=dummy_nodes[d]
+#             path=nx.shortest_path(G,source=new_o,target='R',weight='cost')
+#             for i in range(len(path)-1):
+#                 G[path[i]][path[i+1]]['f_r']+=OD[o,d] 
+#     elif opt==2:
+#         for (o,d) in OD.keys():
+#             path=nx.shortest_path(G,source=o,target=d,weight='cost')
+#             for i in range(len(path)-1):
+#                 G[path[i]][path[i+1]]['f_m']+=OD[o,d]
+#     else:
+#         print("Not correct option")
+#         return 
+    
+#     return G
+
 def init_flows(G,OD):
     #Initiliaze the flows, with a feasible solution
     #still unclear whether we need to initialize the rebalancers appropriately too
     for (o,d) in OD.keys():
         path=nx.shortest_path(G,source=o,target=d,weight='cost')
         for i in range(len(path)-1):
-            G[path[i]][path[i+1]]['f_m']+=OD[o,d]
+            if d=='R':
+                G[path[i]][path[i+1]]['f_r']+=OD[o,d]
+            else:
+                G[path[i]][path[i+1]]['f_m']+=OD[o,d]
+    return G
+
+def init_flows2(G,OD):#here no initialization of the R edges, as they 
+    #Initiliaze the flows, with a feasible solution
+    #still unclear whether we need to initialize the rebalancers appropriately too
+    for (o,d) in OD.keys():
+        if d!='R':
+            path=nx.shortest_path(G,source=o,target=d,weight='cost')
+            for i in range(len(path)-1):
+                if d=='R':
+                    G[path[i]][path[i+1]]['f_r']+=OD[o,d]
+                else:
+                    G[path[i]][path[i+1]]['f_m']+=OD[o,d]
     return G
 
 def AoN(G,OD):
@@ -50,7 +88,9 @@ def AoN(G,OD):
 def FW(G_0,OD,edge_list,dummy_nodes):
     
     y_list=[]
-
+    opt_res=dict()
+    opt_res['a_k']=[]
+    opt_res['obj']=[]
     G_list=[]
     G_list.append(G_0)
     i=1
@@ -61,19 +101,23 @@ def FW(G_0,OD,edge_list,dummy_nodes):
         G_crt=G_k.copy()
         ri_k,G_crt=estimate_ri_k(G_crt,dummy_nodes)
         OD=update_OD(OD,ri_k,dummy_nodes)
-        G_crt=update_capacities(G_crt,ri_k)
-        # disp_both_costs(G_crt)#debug helper
+        G_crt=update_capacities(G_crt,ri_k, dummy_nodes)
+        G_crt=update_costs(G_crt,80)
+        #should there be update costs here? 
+        disp_costs(G_crt)#debug helper
         print("oD:", OD)
         y_k=AoN(G_crt,OD)
         # print("Y_K:", y_k)
-        a_k=line_search(G_crt,y_k,edge_list)
+        a_k,obj_k=line_search(G_crt,y_k,edge_list)
+        opt_res['obj'].append(obj_k)
+        opt_res['a_k'].append(a_k)
         print('ALPHA:', a_k)
         G_crt=update_flows(G_crt,y_k,a_k,edge_list)
         G_k=G_crt
         G_list.append(G_k)
         y_list.append(y_k)
         i+=1
-    return G_list,y_list,OD
+    return G_list,y_list,opt_res,OD
 
 def estimate_ri_k(G,dummy_nodes):
     ri_k=dict()
@@ -98,11 +142,15 @@ def update_OD(OD,ri_k, dummy_nodes):
                 OD[(n,'R')]=0
     return OD
 
-def update_capacities(G,ri_k): #not so sure whether we need to update costs as well
+def update_capacities(G,ri_k, dummy_nodes): #not so sure whether we need to update costs as well
     eps=10**-6
     for n in G.nodes():
-        if ri_k[n]>eps: #this guy needs rebalancers to go through it
-            G[n]['R']['k']=ri_k[n]
+        # print("node: ", n, " -- ri_k: ", ri_k[n])
+        if n not in dummy_nodes.keys() and n!='R':
+            if ri_k[n]>eps: #this guy needs rebalancers to go through it
+                G[n]['R']['k']=ri_k[n]
+            else:
+                G[n]['R']['k']=eps#limit to eps for floating point error
             
     return G
 
@@ -127,7 +175,12 @@ def Total_Cost(G,y_k,a_k,edge_list):
         phi=G[e[0]][e[1]]['phi']
         k=G[e[0]][e[1]]['k']
         # sign=G[e[0]][e[1]]['sign']
-        
+        if k <10**-5:#you eliminate the edges that are considered non-usable
+            continue
+
+        if e[1]=='R':#not including the cost of edges 1R and 2R might make sense, as we want to rebalance whatever happens
+            continue
+        # print(k)
         F_E+=BPR_int(phi,flow_tmp,k)#I am assuming there will be syntaxic problems there
         
         
@@ -141,6 +194,40 @@ def Total_Cost(G,y_k,a_k,edge_list):
             
     return F_E
 
+def line_search(G,y_k,edge_list):
+    a_k=cp.Variable()
+    constraints=[a_k>=0, a_k<=1]
+    obj=Total_Cost(G,y_k,a_k,edge_list)
+    # obj=debug_Total_Cost(G,y_k,a_k,edge_list)
+    # obj=debug2D_Total_Cost(G,y_k,a_k,edge_list)
+    print(obj)
+    prob=cp.Problem(cp.Minimize(obj),constraints)
+    prob.solve(verbose=False)
+    print(prob.status)
+    try:
+        obj_val=obj.value
+    except:
+        obj_val=0
+    return a_k.value,obj_val
+
+def update_flows(G,y_k,a_k,edge_list):
+    
+    for i in range(len(edge_list)):
+        e=edge_list[i]
+        for flag in ['f_m', 'f_r']:
+            x_k_e=G[e[0]][e[1]][flag] # retrieve the flow
+            y_k_e=y_k[(e[0],e[1]),flag] #retrieve the flow from the manual assignment
+            G[e[0]][e[1]][flag]+=a_k*(y_k_e-x_k_e)
+        
+    # G=update_costs(G,80)#inverse demand shift replaced by nominal value currently
+    return G   
+
+
+####################################################################
+########### DEBUG HELPERS 
+####################################################################
+
+#debugging the total cost for 1D
 def debug_Total_Cost(G,y_k,a_k,edge_list):
     F_E=0
     e=('1','2')
@@ -154,25 +241,23 @@ def debug_Total_Cost(G,y_k,a_k,edge_list):
 
     return F_E
 
-def line_search(G,y_k,edge_list):
-    a_k=cp.Variable()
-    constraints=[a_k>=0, a_k<=1]
-    obj=Total_Cost(G,y_k,a_k,edge_list)
-    # obj=debug_Total_Cost(G,y_k,a_k,edge_list)
-    # print(obj)
-    prob=cp.Problem(cp.Minimize(obj),constraints)
-    prob.solve(verbose=False)
-    print(prob.status)
-    return a_k.value
 
-def update_flows(G,y_k,a_k,edge_list):
-    
-    for i in range(len(edge_list)):
-        e=edge_list[i]
-        for flag in ['f_m', 'f_r']:
-            x_k_e=G[e[0]][e[1]][flag] # retrieve the flow
-            y_k_e=y_k[(e[0],e[1]),flag] #retrieve the flow from the manual assignment
-            G[e[0]][e[1]][flag]+=a_k*(y_k_e-x_k_e)
+
+#debugging the total cost for 2D
+#basically I know what the optimal solution is, and I make it very convex so that pretty easy to find
+#I want to test if the rebalancing scheme works appropriately
+def debug2D_Total_Cost(G,y_k,a_k,edge_list):
+    F_E=0
+    e_list=[('1','2'),('2','1')]
+    tgt_val_list=[5,2]
+    for i in range(2):
+        e=e_list[i]
+        tgt_val=tgt_val_list[i]
+        x_k_e=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r'] # retrieve the flow, total
+        y_k_e=y_k[(e[0],e[1]),'f_m']+y_k[(e[0],e[1]),'f_r'] #retrieve the flow from the manual assignment, total
         
-    G=update_costs(G,80)#inverse demand shift replaced by nominal value currently
-    return G   
+        flow_tmp=x_k_e+a_k*(y_k_e-x_k_e)
+
+        F_E+=cp.power(flow_tmp-tgt_val,2)
+
+    return F_E
