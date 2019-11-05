@@ -10,14 +10,6 @@ def BPR_int(phi,x,kappa,alpha=0.15,beta=4):
 def BPR_int_val(phi,x,kappa,alpha=0.15,beta=4):
     return phi*(x+alpha/(beta+1)*np.power(x,(beta+1))/np.power(kappa,beta))
 
-
-# def BPR_int(phi,x,kappa,alpha=0.15,beta=4):
-#     l=x.shape[0]
-#     INT_COST=0
-#     for i in range(l):
-#         INT_COST+=phi[i]*(x[i]+alpha/(beta+1)*np.power(x[i],(beta+1))/np.power(kappa[i],beta))
-#     return INT_COST
-
 def BPR(phi,x,kappa,alpha=0.15,beta=4):
     return phi*(1+alpha*(np.divide(x,kappa))**beta)
 
@@ -109,4 +101,33 @@ def sanity_check_cost(G_k):
     print("2 to 1: ", G_end['2']['1_p']['cost']," ===== ", G_end['2']['1']['cost']+G_end['1']['1_p']['cost'])
         
     
-    
+def plot_sanity_check_cost(G_k,scale='log'):
+    c_12=[]
+    c_21=[]
+    for G in G_k:
+        c_12.append(np.abs((G['1']['2']['cost']+G['2']['2_p']['cost']-G['1']['2_p']['cost'])/G['1']['2_p']['cost']))
+        c_21.append(np.abs((G['2']['1']['cost']+G['1']['1_p']['cost']-G['2']['1_p']['cost'])/G['2']['1_p']['cost']))
+
+    plt.figure(figsize=(13,5))
+    plt.plot(c_12,'--o',label="(1,2)")
+    plt.plot(c_21,'--o',label="(2,1)")
+    plt.legend()
+    plt.grid(True)
+    plt.yscale(scale)
+    plt.xlabel("Iteration #")
+    plt.ylabel("error")
+
+
+def analyze_cost_oscillations(G_k,o,d,scale='log'):
+    c=[]
+    for G in G_k:
+        c.append(((G[o][d]['cost']+G[d][d+'_p']['cost']-G[o][d+'_p']['cost'])/G[o][d+'_p']['cost']))
+    c=np.array(c)
+    plt.figure(figsize=(13,5))
+    plt.plot(c,'o',label="("+o+","+d+")")
+    plt.plot(-c,'ro')
+    plt.legend()
+    plt.grid(True)
+    plt.yscale(scale)
+    plt.xlabel("Iteration #")
+    plt.ylabel("error")
