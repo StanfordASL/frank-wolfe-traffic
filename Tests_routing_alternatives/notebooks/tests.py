@@ -81,3 +81,35 @@ def init_flows2(G,OD):#here no initialization of the R edges, as they
 #         #     F_E+=G.nodes[e[1]]['pot']*flow_tmp
             
 #     return F_E
+
+
+####################################################################
+########### DEBUG HELPERS for FW
+####################################################################
+
+#debugging the total cost for 1D
+def debug_Total_Cost(G,y_k,a_k,edge_list):
+    F_E=0
+    e=('1','2')
+    tgt_val=3
+    x_k_e=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r'] # retrieve the flow, total
+    y_k_e=y_k[(e[0],e[1]),'f_m']+y_k[(e[0],e[1]),'f_r'] #retrieve the flow from the manual assignment, total
+    flow_tmp=x_k_e+a_k*(y_k_e-x_k_e)
+    F_E=cp.power(flow_tmp-tgt_val,2)
+    return F_E
+
+#debugging the total cost for 2D
+#basically I know what the optimal solution is, and I make it very convex so that pretty easy to find
+#I want to test if the rebalancing scheme works appropriately
+def debug2D_Total_Cost(G,y_k,a_k,edge_list):
+    F_E=0
+    e_list=[('1','2'),('2','1')]
+    tgt_val_list=[5,2]
+    for i in range(2):
+        e=e_list[i]
+        tgt_val=tgt_val_list[i]
+        x_k_e=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r'] # retrieve the flow, total
+        y_k_e=y_k[(e[0],e[1]),'f_m']+y_k[(e[0],e[1]),'f_r'] #retrieve the flow from the manual assignment, total
+        flow_tmp=x_k_e+a_k*(y_k_e-x_k_e)
+        F_E+=cp.power(flow_tmp-tgt_val,2)
+    return F_E

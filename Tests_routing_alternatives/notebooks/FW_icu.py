@@ -37,8 +37,15 @@ def AoN(G,OD):
                 y_k[(path[i],path[i+1]),flag]+=N
     return y_k
 
-def FW(G_0,OD,edge_list,dummy_nodes,maxIter=50, step='line_search'):
-    
+def FW(G_0,OD,edge_list,dummy_nodes,maxIter=50, step='line_search',
+       rebalancer_smoothing=False, ri_smoothing=True):
+
+    #might have to "reorganize" the order of operations, in order to make it more understandable/logical
+
+
+    ###########################################
+    # PARAMETERS
+    ##########################################  
     y_list=[]
     opt_res=dict()
     opt_res['a_k']=[]
@@ -46,19 +53,24 @@ def FW(G_0,OD,edge_list,dummy_nodes,maxIter=50, step='line_search'):
     G_list=[]
     G_list.append(G_0)
     G_k=G_0
-
+    a_k=1
     i=1
-    while i<maxIter:  
+    ############################################
+    # FW loop
+    ############################################
+
+    while i<maxIter: #introduce stopping criterion 
         print("###############################") 
         print("iteration # ", i)
         G_crt=G_k.copy()
 
         #deal with rebalancers
         #estimate #ri_k, update OD, assign, update costs
-        ri_k,G_crt=estimate_ri_k(G_crt,dummy_nodes)
+        ri_k,G_crt=estimate_ri_k(G_crt,dummy_nodes, ri_smoothing, a_k)
         OD=update_OD(OD,ri_k,dummy_nodes)
         G_crt=update_capacities(G_crt,ri_k, dummy_nodes)
-        G_crt=assign_rebalancers(G_crt,OD)
+
+        G_crt=assign_rebalancers(G_crt,OD,rebalancer_smoothing,a_k)
         G_crt=update_costs(G_crt,80)
         disp_costs(G_crt)#debug helper
         
@@ -84,28 +96,42 @@ def FW(G_0,OD,edge_list,dummy_nodes,maxIter=50, step='line_search'):
         i+=1
     return G_list,y_list,opt_res,OD
 
-def assign_rebalancers(G,OD):
+def assign_rebalancers(G,OD, rebalancer_smoothing,a_k):
     #assign rebalancers to shortest path, in a definite manner 
     #i.e. we do not optimize on that, and consider them fixed at every iteration
+
+    if not rebalancer_smoothing:
+        beta=1 #we only take the new assignment into account
+    else:
+        beta=a_k #we take the step size that is given to us, and update the rebalancers accordingly
+
     for (o,d) in OD.keys():
         N_r=OD[o,d]
         if d=='R' and N_r >10**-6:
             path=nx.shortest_path(G,source=o,target=d,weight='cost')
             for i in range(len(path)-1):
-                G[path[i]][path[i+1]]['f_r']=N_r
+                G[path[i]][path[i+1]]['f_r']=(1-beta)*G[path[i]][path[i+1]]['f_r']+beta*N_r #introduce some kind of smoothing of the rebalancing update
     return G
 
-def estimate_ri_k(G,dummy_nodes):
+def estimate_ri_k(G,dummy_nodes,ri_smoothing,a_k):
     #determine whether each node is in excess or deficit of rebalancers
     ri_k=dict()
+    ri_k_prev=dict()
+    
+    if ri_smoothing:
+        beta=a_k
+    else:
+        beta=1 #no smoothing
+
     for n in G.nodes():
         ri_k[n]=0
+        ri_k_prev[n]=G.nodes[n]["ri"]
     for e in G.edges():
         if e[1] not in dummy_nodes.keys():
             ri_k[e[0]]+=G[e[0]][e[1]]['f_m']
             ri_k[e[1]]-=G[e[0]][e[1]]['f_m']
     for n in G.nodes():
-        G.nodes[n]["ri"]=ri_k[n]
+        G.nodes[n]["ri"]= (1-beta) * ri_k_prev[n] + beta*ri_k[n]
     return ri_k,G
 
 def update_OD(OD,ri_k, dummy_nodes):
@@ -170,7 +196,7 @@ def Total_Cost(G,y_k,a_k,edge_list):
             
     return F_E
 
-def Total_Cost_value(G):
+def Value_Total_Cost(G):
     F_E=0
     for e in G.edges():#you know for sure exactly what edge it is for
         x_k_e_m=G[e[0]][e[1]]['f_m']
@@ -185,7 +211,7 @@ def Total_Cost_value(G):
         if e[1]=='R':#not including the cost of edges 1R and 2R might make sense, as we want to rebalance whatever happens
             continue
 
-        F_E+=BPR_int(phi,x_k_e_m + x_k_e_r,k)#I am assuming there will be syntaxic problems there
+        F_E+=BPR_int_val(phi,x_k_e_m + x_k_e_r,k)#I am assuming there will be syntaxic problems there
         
         #this has to be included because it is directly included in the definition of the cost function
         if G[e[0]][e[1]]['sign']==(-1): #we have a negative edge
@@ -207,7 +233,8 @@ def fixed_step(G,y_k,edge_list,k):
             x_k_e=G[e[0]][e[1]][flag] # retrieve the flow
             y_k_e=y_k[(e[0],e[1]),flag] #retrieve the flow from the manual assignment
             G[e[0]][e[1]][flag]=(1-gamma)*x_k_e+gamma*y_k_e
-    return gamma, Total_Cost_value(G)
+        
+    return gamma, Value_Total_Cost(G)
     
 
 
@@ -231,39 +258,11 @@ def update_flows(G,y_k,a_k,edge_list):
         for flag in ['f_m']:#, 'f_r']: we consider the flow of rebalancers fixed during the computation of costs
             x_k_e=G[e[0]][e[1]][flag] # retrieve the flow
             y_k_e=y_k[(e[0],e[1]),flag] #retrieve the flow from the manual assignment
-            G[e[0]][e[1]][flag]+=a_k*(y_k_e-x_k_e)
+            G[e[0]][e[1]][flag]=(1-a_k)*x_k_e + a_k * y_k_e
     return G   
 
 
-####################################################################
-########### DEBUG HELPERS 
-####################################################################
-
-#debugging the total cost for 1D
-def debug_Total_Cost(G,y_k,a_k,edge_list):
-    F_E=0
-    e=('1','2')
-    tgt_val=3
-    x_k_e=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r'] # retrieve the flow, total
-    y_k_e=y_k[(e[0],e[1]),'f_m']+y_k[(e[0],e[1]),'f_r'] #retrieve the flow from the manual assignment, total
-    flow_tmp=x_k_e+a_k*(y_k_e-x_k_e)
-    F_E=cp.power(flow_tmp-tgt_val,2)
-    return F_E
 
 
 
-#debugging the total cost for 2D
-#basically I know what the optimal solution is, and I make it very convex so that pretty easy to find
-#I want to test if the rebalancing scheme works appropriately
-def debug2D_Total_Cost(G,y_k,a_k,edge_list):
-    F_E=0
-    e_list=[('1','2'),('2','1')]
-    tgt_val_list=[5,2]
-    for i in range(2):
-        e=e_list[i]
-        tgt_val=tgt_val_list[i]
-        x_k_e=G[e[0]][e[1]]['f_m']+G[e[0]][e[1]]['f_r'] # retrieve the flow, total
-        y_k_e=y_k[(e[0],e[1]),'f_m']+y_k[(e[0],e[1]),'f_r'] #retrieve the flow from the manual assignment, total
-        flow_tmp=x_k_e+a_k*(y_k_e-x_k_e)
-        F_E+=cp.power(flow_tmp-tgt_val,2)
-    return F_E
+
