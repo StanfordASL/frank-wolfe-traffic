@@ -12,3 +12,6 @@
 #######
 .*~
 .csv
+
+#notebooks#
+Tests_routing_alternatives/notebooks/.ipynb_checkpoints/

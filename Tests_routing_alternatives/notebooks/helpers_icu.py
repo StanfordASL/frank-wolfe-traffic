@@ -20,6 +20,35 @@ def cost_per_edge(alpha,beta,phi_vec,flow_vec,kappa_vec,K_vec):
     c=BPR(alpha,beta,phi_vec,flow_vec,kappa_vec)-K_vec
     return c
 
+
+def Value_Total_Cost(G):
+    F_E=0
+    for e in G.edges():#you know for sure exactly what edge it is for
+        x_k_e_m=G[e[0]][e[1]]['f_m']
+        x_k_e_r = G[e[0]][e[1]]['f_r'] 
+        
+        #retrieve parameters to compute the BPR
+        phi=G[e[0]][e[1]]['phi']
+        k=G[e[0]][e[1]]['k']
+
+        if k <10**-5:#you eliminate the edges that are considered non-usable
+            continue
+        if e[1]=='R':#not including the cost of edges 1R and 2R might make sense, as we want to rebalance whatever happens
+            continue
+
+        F_E+=BPR_int_val(phi,x_k_e_m + x_k_e_r,k)#I am assuming there will be syntaxic problems there
+        
+        #this has to be included because it is directly included in the definition of the cost function
+        if G[e[0]][e[1]]['sign']==(-1): #we have a negative edge
+            F_E-=(x_k_e_m + x_k_e_r)*80#INVERSE_DEMAND_SHIFT
+        
+        # not entirely sure this needs to be here
+        # if 'pot' in G.nodes[e[1]]:
+        #     F_E+=G.nodes[e[1]]['pot']*flow_tmp
+            
+    return F_E
+
+
 def plot_edge_attrs(G_list,y_list,attrs,dots=True,lims=None):
     G_=G_list[0]
     _,axes=plt.subplots(len(G_.edges()),len(attrs),figsize=(20,5*len(G_.edges())))
@@ -51,7 +80,7 @@ def plot_edge_attrs(G_list,y_list,attrs,dots=True,lims=None):
             axes[i,j].set_xlim(lims)
         i+=1
 
-def plot_node_attrs(G_list,attrs):
+def plot_node_attrs(G_list,attrs,lims=None):
     G_=G_list[0]
     _,axes=plt.subplots(len(G_.nodes()),len(attrs),figsize=(18,5*len(G_.nodes())))
     i=0
@@ -66,6 +95,7 @@ def plot_node_attrs(G_list,attrs):
                 axes[i].grid(True)
                 axes[i].set_xlabel('Iteration #')
                 axes[i].set_title(' node : ' + str(n))
+                axes[i].set_xlim(lims)
             
             else:
                 axes[i,j].plot(att,'--o',label=attrs[j])
@@ -74,6 +104,16 @@ def plot_node_attrs(G_list,attrs):
                 axes[i,j].set_title(' node : ' + str(n))
                 axes[i,j].legend()
         i+=1
+
+def plot_OD(OD_list,o,d):
+    vals=[]
+    for OD in OD_list:
+        vals.append(OD[o,d])
+    plt.figure(figsize=(13,5))
+    plt.plot(np.array(vals),'o--',markersize=2)
+    plt.grid(True)
+    
+
 
 ####################################################################
 ########### DEBUG HELPERS 
@@ -203,7 +243,7 @@ def analyze_cost_oscillations_3(G_k,y_k,o,d,lims=None,scale='linear'):
     #same analysis as above but focusing on the dummy edges
     
     tgt_cost=90
-    tgt_flow=8.65
+    # tgt_flow=8.65
     c=[]
     f_m=[]
     f_r=[]
@@ -225,13 +265,13 @@ def analyze_cost_oscillations_3(G_k,y_k,o,d,lims=None,scale='linear'):
     fig, ax1 = plt.subplots(figsize=(18,5))
     # ax1.plot(-c,'ro')
     ax2=ax1.twinx()
-    for k in range(y_dummy.shape[0]):
-        if y_dummy[k]!=0:
-            ax2.plot(k*np.ones(50),np.linspace(1,10,50),'k-',linewidth=1.3)
     ax1.plot(c,'ro',label="Cost of the normal edge")
     ax1.plot(np.linspace(1,c.shape[0],50),tgt_cost*np.ones(50),'g--',label='Target value')
     ax2.plot(f_m,"--o",label="f_m dummy edge")
     ax2.plot(f_r,"--o",label="f_r dummy edge")
+    for k in range(y_dummy.shape[0]):
+        if y_dummy[k]!=0:
+            ax1.plot(k*np.ones(50),np.linspace(1,100,50),'k-',linewidth=1.3)
     # ax2.plot(y_dummy,label='y_m')
     fig.legend()
     ax1.grid(True)
