@@ -24,7 +24,8 @@ def AoN(G,OD,dummy_nodes):
     #perform the All Or Nothing assignment    
     y_k=init_y(G)
     eps=10**-6
-    alpha=1.5
+
+    alpha=1.5 #TODO: what is this alpha for? 
     for (o,d) in OD.keys():
         U=OD[o,d]
         if U>eps:
@@ -37,8 +38,13 @@ def AoN(G,OD,dummy_nodes):
 
             #in this case, we are assigning to the dummy edge
             #again, not sure that the dummy edges are truly necessary in the end
+            #TODO: figure out what the commented version here below actually meant
+            #it seems to me like it was a fix to make sure we introduce the 
+            #"complement" of the demand
+            #we have to see whether or not it was helping in the ICU case... ? 
             if len(path)==2 and d!='R':
-                y_k[(o,d),'f_m']+=alpha*(U-G[dummy_nodes[d]][d]['f_m'])
+                # y_k[(o,d),'f_m']+=alpha*(U-G[dummy_nodes[d]][d]['f_m'])
+                y_k[(o,d),'f_m']+=U
             else:
                 for i in range(len(path)-1):
                     y_k[(path[i],path[i+1]),flag]+=U
@@ -146,7 +152,7 @@ def update_OD(OD,ri_k, a_k, dummy_nodes, G, evolving_bounds=True):
     #update the OD pairs for rebalancers
     eps=10**-6
     for n in ri_k.keys():
-        if not n=='R':
+        if n!='R' and n not in dummy_nodes.keys():
             if ri_k[n]<-eps: #you are in excess
                 OD[(n,'R')]=-ri_k[n]
             else:

@@ -16,6 +16,7 @@ def update_costs(G,INVERSE_DEMAND_SHIFT):
         G[e[0]][e[1]]['cost']=BPR(phi,x,k)
 
         if k<10**-5:#we eliminate the edges with a too high cost from the equation
+            #TODO: figure out whether this is a problem for the iterative alg? 
             G[e[0]][e[1]]['cost']=UPPER_LIMIT
             continue
 
