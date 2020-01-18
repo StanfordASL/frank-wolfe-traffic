@@ -15,15 +15,15 @@ def update_costs(G,INVERSE_DEMAND_SHIFT):
         k=G[e[0]][e[1]]['k']
         G[e[0]][e[1]]['cost']=BPR(phi,x,k)
 
+        #if the capacity is too small (only happens for the edges to R)
+        #then we can say that there is no flow there actually 
+        # (there might have been flow allocated from previous iterations that will just
+        # mess up our current estimations)
         if k<10**-5:#we eliminate the edges with a too high cost from the equation
             #TODO: figure out whether this is a problem for the iterative alg? 
             G[e[0]][e[1]]['cost']=UPPER_LIMIT
+            G[e[0]][e[1]]['f_r']=0
             continue
-
-        # ### debug
-        # if e[0]=='1' and e[1] =='2':
-        #     print("flow:", x)
-        #     print("new cost:", G[e[0]][e[1]]['cost'])
 
         if G[e[0]][e[1]]['sign']==(-1): #we have a negative edge
             G[e[0]][e[1]]['cost']-=INVERSE_DEMAND_SHIFT

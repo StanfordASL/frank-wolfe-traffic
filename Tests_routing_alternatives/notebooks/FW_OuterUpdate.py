@@ -8,13 +8,10 @@ from FW_icu import update_OD,update_capacities, AoN, estimate_ri_k
 from helpers_icu import Value_Total_Cost,print_final_flows, print_final_cost
 from routines_icu import update_costs
 
-def solve(G_0,OD,edge_list,dummy_nodes,tol=10**-6):
-    #while ri too different from d do: 
-    #step 1: estimate ri
-    #step 2: solve exactly the elastic demand problem as a function of ri
-    #end while
-
+def solve(G_0,OD,edge_list,dummy_nodes,tol=10**-6, FW_tol=10**-6):
+    
     #Variables to store at each iterations
+
     i=1
     G_=[]
     ri_=[]
@@ -26,20 +23,30 @@ def solve(G_0,OD,edge_list,dummy_nodes,tol=10**-6):
     #initialize flows and compute ri? 
     #They are already initialized in the case of the icu
     # G_k=init_flows(G_k,OD)
-    print("Below is the initialized flows")
-    print_final_flows([G_k])
+
     ri_k,G_k=estimate_ri_k(G_k,dummy_nodes, ri_smoothing=False, a_k=0) 
 
 
+    #Save the different variables
+    G_.append(G_k) 
+    ri_.append(ri_k)
+
     compute=True
     while compute:
-        
+        print("##########################################")
+        print("ITERATION #: ", i )
         print("CURRENT RI_k")
         print(ri_k)
 
+        
+
         #solve system entirely for the given parameters
+        #TODO: maybe you do not have to go all the way in the computation
+        #maybe you can introduce a decreasing tolerance over the different problems
+        #like start with tol=1 and then divide it by two at every step
+
         G_list,_,_,_=FW_graph_extension(
-            G_k,OD,edge_list,dummy_nodes,ri_k,FW_tol=10**-6, 
+            G_k,OD,edge_list,dummy_nodes,ri_k,FW_tol, 
             step='fixed', evolving_bounds=False)
 
         #solution at previous step
@@ -52,6 +59,8 @@ def solve(G_0,OD,edge_list,dummy_nodes,tol=10**-6):
         ri_new,G_end=estimate_ri_k(G_end,dummy_nodes, ri_smoothing=False, a_k=0)
         
         if diff_ri(ri_k,ri_new)<tol:
+            # print("flows at the end:")
+            # print_final_flows([G_end])
             compute=False
         
         #The big question is what value of the flows and the graph you actually restart everything with
@@ -61,8 +70,8 @@ def solve(G_0,OD,edge_list,dummy_nodes,tol=10**-6):
         G_k = G_end #TODO: does it work if you actually keep the last version of G (as you solved it? )
 
         #Save the different variables
-        G_.append(G_end) #we keep the end version of the solved graph
-        ri_.append(ri_new)
+        G_.append(G_k) 
+        ri_.append(ri_k)
 
         i+=1
 
@@ -112,6 +121,7 @@ def FW_graph_extension(
     #you update capacities because you have new values of ri_k
     G_k=update_capacities(G_k,ri_k, dummy_nodes)
     G_k=update_costs(G_k,80) #we need to ensure that the information is passed on to the costs
+
     ###################################
     # Reinitialize
     ###################################
@@ -120,7 +130,9 @@ def FW_graph_extension(
 
     G_k=init_flows(G_k,OD)
     G_k=update_costs(G_k,80)
+    print("Cost at the beginning of the iteration:")
     print_final_cost([G_k])
+    print("Flows at the beginning of the iteration:")
     print_final_flows([G_k])
     
     ###################################
@@ -154,6 +166,9 @@ def FW_graph_extension(
         G_k=update_flows(G_k,y_k,a_k,edge_list)
         G_k=update_costs(G_k,80)
 
+        # print("current flows: ")
+        # print_final_flows([G_k])
+
         #save for analyses
         opt_res['obj'].append(obj_k)
         opt_res['a_k'].append(a_k)
@@ -163,7 +178,7 @@ def FW_graph_extension(
         OD_list.append(OD.copy())
         i+=1
         # print("ITERATION# :", i) 
-        print(duality_gap)
+        # print(duality_gap)
     return G_list,y_list,opt_res,OD_list
 
 def compute_duality_gap(G_k,y_k):
@@ -196,7 +211,8 @@ def fixed_step(G,y_k,edge_list,k):
     #here we actually update both the rebalancing and the passenger flows
     #we need to take both into account because we are solving for a fixed value of the ri's
 
-    gamma=2/(k+2)
+    gamma=2/(k**1.5+2)#the update step is very important, if it is too large, then we lose the progress we made
+    #currently I put k**1.5 because I want to accelerate the computation slightly
 
     for i in range(len(edge_list)):
         e=edge_list[i]

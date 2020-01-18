@@ -75,16 +75,17 @@ def modified_FW(G_0,OD,edge_list,dummy_nodes,maxIter=50, step='line_search',
 
     while i<maxIter: #introduce stopping criterion 
         G_crt=G_k.copy()
-
+        
         #deal with rebalancers
         #estimate #ri_k, update OD, assign, update costs
         ri_k,G_crt=estimate_ri_k(G_crt,dummy_nodes, ri_smoothing, a_k)
         OD=update_OD(OD,ri_k,a_k,dummy_nodes, G_crt, evolving_bounds)
         G_crt=update_capacities(G_crt,ri_k, dummy_nodes)
-
+        # G_crt=update_costs(G_crt,80)
+        #for some reason including the above update_costs messes up things
+        #TODO: understand really why? 
         G_crt=assign_rebalancers(G_crt,OD,rebalancer_smoothing,a_k)
         G_crt=update_costs(G_crt,80)
-        #disp_costs(G_crt)#debug helper
         
         #perform AON assignment
         y_k=AoN(G_crt,OD,dummy_nodes)
@@ -112,6 +113,7 @@ def modified_FW(G_0,OD,edge_list,dummy_nodes,maxIter=50, step='line_search',
 def assign_rebalancers(G,OD, rebalancer_smoothing,a_k):
     #assign rebalancers to shortest path, in a definite manner 
     #i.e. we do not optimize on that, and consider them fixed at every iteration
+    #important: the rebalancers are treated as external parameters to our problem
 
     if not rebalancer_smoothing:
         beta=1 #we only take the new assignment into account
