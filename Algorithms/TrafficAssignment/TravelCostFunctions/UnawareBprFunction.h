@@ -42,7 +42,7 @@ class UnawareBprFunction {
 	  else
 	  {
 		  x_new = x;
-		  const double pt = APT * graph.capacity(e); // The point at which we linearize.
+		  const double pt = APT * cap; // The point at which we linearize.
 		  if (x_new <= pt)
 			  return bpr.derivative(e, x_new);
 		  else

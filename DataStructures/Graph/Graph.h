@@ -970,8 +970,8 @@ class Graph<VertexAttrs<VertexAttributes...>, EdgeAttrs<EdgeAttributes...>, dyna
 
   int edgeCount; // The number of edges in the graph.
 
-  int dummy_id; // id of dummy vertex
-  double exo; // exogenous flow
+  int dummy_id = 99999999; // id of dummy vertex
+  double exo = 0.0; // exogenous flow
 };
 
 // Write a textual representation to the specified output stream.

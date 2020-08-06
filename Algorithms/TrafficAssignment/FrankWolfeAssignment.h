@@ -18,6 +18,8 @@
 #include "Tools/Simd/AlignedVector.h"
 #include "Tools/Timer.h"
 
+#define TA_NO_SIMD_LINE_SEARCH
+
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
 // compute the user equilibrium or system optimum, and to use different travel cost functions and
@@ -140,6 +142,7 @@ class FrankWolfeAssignment {
       FORALL_EDGES(inputGraph, e)
         inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
 #else
+	  std::cout << "HERE" << std::endl;
       FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
         const Vec4d flow = Vec4d().load(&trafficFlows[e]);
         const Vec4i weight = truncate_to_int(objFunction.getEdgeWeights(e, flow));

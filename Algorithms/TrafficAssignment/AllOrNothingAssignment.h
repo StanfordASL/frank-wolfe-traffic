@@ -50,6 +50,9 @@ class AllOrNothingAssignment {
     ++stats.numIterations;
     if (verbose) std::cout << "Iteration " << stats.numIterations << ": " << std::flush;
 	std::cout << "odPairs.size()" << odPairs.size() << std::endl;
+
+	std::cout << "K=" << K << std::endl;
+	
 	
     shortestPathAlgo.customize();
     stats.lastCustomizationTime = timer.elapsed();
