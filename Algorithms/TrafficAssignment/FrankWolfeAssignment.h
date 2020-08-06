@@ -18,8 +18,6 @@
 #include "Tools/Simd/AlignedVector.h"
 #include "Tools/Timer.h"
 
-#define TA_NO_SIMD_LINE_SEARCH
-
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
 // compute the user equilibrium or system optimum, and to use different travel cost functions and

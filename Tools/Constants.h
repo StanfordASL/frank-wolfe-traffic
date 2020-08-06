@@ -19,5 +19,5 @@ constexpr int EARTH_RADIUS = 6371000;
 
 // The maximum number of shortest paths computed simultaneously during traffic assignment.
 #ifndef TA_LOG_K
-# define TA_LOG_K 5
+# define TA_LOG_K 1
 #endif
