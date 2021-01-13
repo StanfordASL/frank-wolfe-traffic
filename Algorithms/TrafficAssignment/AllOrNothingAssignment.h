@@ -40,8 +40,6 @@ class AllOrNothingAssignment {
     stats.lastRoutingTime = stats.totalPreprocessingTime;
     stats.totalRoutingTime = stats.totalPreprocessingTime;
     if (verbose) std::cout << "  Prepro: " << stats.totalPreprocessingTime << "ms" << std::endl;
-
-	std::cout << "od_pairs size" << odPairs.size() << std::endl;
   }
 
   // Assigns all OD-flows to their currently shortest paths.

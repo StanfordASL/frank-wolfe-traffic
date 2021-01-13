@@ -312,25 +312,13 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
   if (func == "bpr")
     chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
   else if (func == "modified_bpr")
-  {  
 	chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
-    std::cout << "modified BPR is used!" << std::endl;
-  }
   else if (func == "custom_bpr")
-  {
 	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
-	  std::cout << "custom BPR is used!" << std::endl;
-  }
   else if (func == "approx_bpr")
-  {
 	  chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);
-	  std::cout << "approx BPR is used!" << std::endl;
-  }
   else if (func == "unaware_bpr")
-  {
 	  chooseShortestPathAlgo<ObjFunctionT, UnawareBprFunction>(clp);
-	  std::cout << "unaware BPR is used!" << std::endl;
-  }
   else if (func == "davidson")
     chooseShortestPathAlgo<ObjFunctionT, DavidsonFunction>(clp);
   else if (func == "modified_davidson")

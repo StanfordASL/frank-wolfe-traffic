@@ -43,11 +43,6 @@ class FrankWolfeAssignment {
         patternFile(patternFile),
         verbose(verbose) {
     stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
-
-	std::cout << "consider_loss=" << consider_loss << std::endl;
-
-	/*FORALL_EDGES(inputGraph, e)
-	  std::cout << inputGraph.edgeTail(e) << " " << inputGraph.edgeHead(e) <<  " " << inputGraph.capacity(e) << std::endl;*/
   }
 
   // Assigns all OD-flows onto the input graph.
@@ -140,7 +135,6 @@ class FrankWolfeAssignment {
       FORALL_EDGES(inputGraph, e)
         inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
 #else
-	  std::cout << "HERE" << std::endl;
       FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
         const Vec4d flow = Vec4d().load(&trafficFlows[e]);
         const Vec4i weight = truncate_to_int(objFunction.getEdgeWeights(e, flow));
