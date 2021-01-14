@@ -31,22 +31,15 @@ class DijkstraAdapter {
   class QueryAlgo {
    public:
     // Constructs a query algorithm instance working on the specified data.
-	  QueryAlgo(const InputGraph& inputGraph, AlignedVector<int>& flowsOnForwardEdges, const int odNum)
+	  QueryAlgo(const InputGraph& inputGraph, AlignedVector<int>& flowsOnForwardEdges)
         : search(inputGraph),
           flowsOnForwardEdges(flowsOnForwardEdges),
           localFlowsOnForwardEdges(flowsOnForwardEdges.size()) {
       assert(inputGraph.numEdges() == flowsOnForwardEdges.size());
-	  (void)odNum;
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-	  void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool consider_loss, const int first_k) {
-		// loss is not implemented here
-		assert(!consider_loss);
-		(void)consider_loss;
-		(void)first_k;
-		
-		
+	  void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
 		// Run a centralized Dijkstra search.
 		search.run(sources, targets);
 
@@ -65,12 +58,7 @@ class DijkstraAdapter {
     }
 
     // Adds the local flow counters to the global ones. Must be synchronized externally.
-    void addLocalToGlobalFlows(const bool consider_loss = false) {
-		// loss is not implemented here
-		assert(!consider_loss);
-		if (consider_loss)
-			std::cout << "This is not supposed to happen" << std::endl;
-		
+    void addLocalToGlobalFlows() {
 		for (auto e = 0; e < flowsOnForwardEdges.size(); ++e)
 			flowsOnForwardEdges[e] += localFlowsOnForwardEdges[e];
     }
@@ -84,8 +72,8 @@ class DijkstraAdapter {
   };
 
   // Constructs an adapter for Dijkstra's algorithm.
-	explicit DijkstraAdapter(const InputGraph& inputGraph, const int odNum)
-		: inputGraph(inputGraph), flowsOnForwardEdges(inputGraph.numEdges()), odNum(odNum) {}
+	explicit DijkstraAdapter(const InputGraph& inputGraph)
+		: inputGraph(inputGraph), flowsOnForwardEdges(inputGraph.numEdges()) {}
 
   // Invoked before the first iteration.
   void preprocess() { /* do nothing */ }
@@ -97,7 +85,7 @@ class DijkstraAdapter {
 
   // Returns an instance of the query algorithm.
   QueryAlgo getQueryAlgoInstance() {
-	  return {inputGraph, flowsOnForwardEdges, odNum};
+	  return {inputGraph, flowsOnForwardEdges};
   }
 
   // Propagates the flows on the edges in the search graphs to the edges in the input graph.
@@ -108,9 +96,7 @@ class DijkstraAdapter {
 
  private:
   const InputGraph& inputGraph;           // The input graph.
-  AlignedVector<int> flowsOnForwardEdges; // The flows on the edges in the forward graph.
-	const int odNum;
-	
+  AlignedVector<int> flowsOnForwardEdges; // The flows on the edges in the forward graph.	
 };
 
 }

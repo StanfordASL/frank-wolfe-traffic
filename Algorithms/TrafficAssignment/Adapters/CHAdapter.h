@@ -33,19 +33,19 @@ class CHAdapter {
    public:
     // Constructs a query algorithm instance working on the specified data.
     QueryAlgo(
-        const CH& ch, AlignedVector<int>& flowsOnUpEdges, AlignedVector<int>& flowsOnDownEdges, const int odNum)
+        const CH& ch, AlignedVector<int>& flowsOnUpEdges, AlignedVector<int>& flowsOnDownEdges)
         : ch(ch),
           search(ch),
           flowsOnUpEdges(flowsOnUpEdges),
           flowsOnDownEdges(flowsOnDownEdges),
           localFlowsOnUpEdges(flowsOnUpEdges.size()),
-          localFlowsOnDownEdges(flowsOnDownEdges.size()), odPathsUp(odNum), odPathsDown(odNum), odLengths(odNum){
+          localFlowsOnDownEdges(flowsOnDownEdges.size()){
       assert(ch.upwardGraph().numEdges() == flowsOnUpEdges.size());
       assert(ch.downwardGraph().numEdges() == flowsOnDownEdges.size());
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-	  void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k, const bool consider_loss, const int first_k) {
+	  void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
 		// Run a centralized CH search.
 		for (auto i = 0; i < K; ++i) {
 			sources[i] = ch.rank(sources[i]);
@@ -53,26 +53,14 @@ class CHAdapter {
 		}
 		search.run(sources, targets);
 		
-		// Assign flow to the edges on the computed paths.
-		if (!consider_loss){
-			for (auto i = 0; i < k; ++i) {				
-				for (const auto e : search.getUpEdgePath(i)) {
-					assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
-					++localFlowsOnUpEdges[e];
-				}
-				for (const auto e : search.getDownEdgePath(i)) {
-					assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
-					++localFlowsOnDownEdges[e];
-				}
+		for (auto i = 0; i < k; ++i) {				
+			for (const auto e : search.getUpEdgePath(i)) {
+				assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
+				++localFlowsOnUpEdges[e];
 			}
-		} else {
-			for (auto i = 0; i < k; ++i) {
-				for (const auto e : search.getUpEdgePath(i)) 
-					odPathsUp[i+first_k].push_back(e);
-				for (const auto e : search.getDownEdgePath(i))
-					odPathsDown[i+first_k].push_back(e);
-				
-				odLengths[i+first_k] = search.getDistance(i);
+			for (const auto e : search.getDownEdgePath(i)) {
+				assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
+				++localFlowsOnDownEdges[e];
 			}
 		}
 	}
@@ -83,38 +71,7 @@ class CHAdapter {
     }
 
     // Adds the local flow counters to the global ones. Must be synchronized externally.
-    void addLocalToGlobalFlows(const bool consider_loss = false) {
-		if (consider_loss){
-			int N = odLengths.size();
-			int n = N / 3;
-			std::cout << "N=" << N << std::endl;
-			assert(N % 3 == 0);
-			
-			std::vector<int> to_process;
-			for (auto i = 0; i < n; i++){
-				int cost_rebalance = odLengths[i] + odLengths[i + n];
-				int cost_loss = odLengths[i + 2*n];
-				
-				if (cost_rebalance < cost_loss){
-					to_process.push_back(i);
-					to_process.push_back(i+n);
-				}
-				else
-					to_process.push_back(i+2*n);
-			}
-
-			for (auto it = to_process.begin(); it != to_process.end(); it++){
-				for (const auto e : odPathsUp[*it]) {
-					assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
-					++localFlowsOnUpEdges[e];
-				}
-				for (const auto e : odPathsDown[*it]) {
-					assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
-					++localFlowsOnDownEdges[e];
-				}
-			}
-		}
-		
+    void addLocalToGlobalFlows() {
 		FORALL_EDGES(ch.upwardGraph(), e)
 			flowsOnUpEdges[e] += localFlowsOnUpEdges[e];
 		FORALL_EDGES(ch.downwardGraph(), e)
@@ -128,13 +85,10 @@ class CHAdapter {
 	  AlignedVector<int>& flowsOnDownEdges;   // The flows in the downward graph.
 	  std::vector<int> localFlowsOnUpEdges;   // The local flows in the upward graph.
 	  std::vector<int> localFlowsOnDownEdges; // The local flows in the downward graph.
-	  std::vector<std::vector<int>> odPathsUp;  // The actual paths (used only for LOSS)
-	  std::vector<std::vector<int>> odPathsDown;  // The actual paths (used only for LOSS)
-	  std::vector<int> odLengths;          // Lengths of paths
   };
 
   // Constructs an adapter for CHs.
-	explicit CHAdapter(const InputGraph& inputGraph, const int odNum) : inputGraph(inputGraph), odNum(odNum) {}
+	explicit CHAdapter(const InputGraph& inputGraph) : inputGraph(inputGraph){}
 
   // Invoked before the first iteration.
   void preprocess() { /* do nothing */ }
@@ -148,7 +102,7 @@ class CHAdapter {
 
   // Returns an instance of the query algorithm.
   QueryAlgo getQueryAlgoInstance() {
-	  return {ch, flowsOnUpEdges, flowsOnDownEdges, odNum};
+	  return {ch, flowsOnUpEdges, flowsOnDownEdges};
   }
 
   // Propagates the flows on the edges in the search graphs to the edges in the input graph.
@@ -179,7 +133,6 @@ class CHAdapter {
 
   AlignedVector<int> flowsOnUpEdges;   // The flows on the edges in the upward graph.
   AlignedVector<int> flowsOnDownEdges; // The flows on the edges in the downward graph.
-	const int odNum;
 };
 
 }
