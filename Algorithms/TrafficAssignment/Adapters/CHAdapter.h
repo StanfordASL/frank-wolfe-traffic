@@ -45,22 +45,22 @@ class CHAdapter {
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-	  void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
+	  void run(std::array<int, K>& sources, std::array<int, K>& targets, std::array<int, K>& volumes, const int k) {
 		// Run a centralized CH search.
 		for (auto i = 0; i < K; ++i) {
 			sources[i] = ch.rank(sources[i]);
 			targets[i] = ch.rank(targets[i]);
 		}
 		search.run(sources, targets);
-		
+
 		for (auto i = 0; i < k; ++i) {				
 			for (const auto e : search.getUpEdgePath(i)) {
 				assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
-				++localFlowsOnUpEdges[e];
+				localFlowsOnUpEdges[e] += volumes[i];
 			}
 			for (const auto e : search.getDownEdgePath(i)) {
 				assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
-				++localFlowsOnDownEdges[e];
+				localFlowsOnDownEdges[e] += volumes[i];
 			}
 		}
 	}
@@ -72,6 +72,7 @@ class CHAdapter {
 
     // Adds the local flow counters to the global ones. Must be synchronized externally.
     void addLocalToGlobalFlows() {
+		// Kiril: this doesn't need to change as local flows already account for volume
 		FORALL_EDGES(ch.upwardGraph(), e)
 			flowsOnUpEdges[e] += localFlowsOnUpEdges[e];
 		FORALL_EDGES(ch.downwardGraph(), e)

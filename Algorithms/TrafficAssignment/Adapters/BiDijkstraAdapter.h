@@ -46,7 +46,7 @@ class BiDijkstraAdapter {
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-    void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
+    void run(std::array<int, K>& sources, std::array<int, K>& targets, std::array<int, K>& volumes, const int k) {
       // Run a centralized bidirectional search.
       search.run(sources, targets);
 
@@ -54,11 +54,11 @@ class BiDijkstraAdapter {
       for (auto i = 0; i < k; ++i) {
         for (const auto e : search.getEdgePathToMeetingVertex(i)) {
           assert(e >= 0); assert(e < localFlowsOnForwardEdges.size());
-          ++localFlowsOnForwardEdges[e];
+          localFlowsOnForwardEdges[e] += volumes[i];
         }
         for (const auto e : search.getEdgePathFromMeetingVertex(i)) {
           assert(e >= 0); assert(e < localFlowsOnReverseEdges.size());
-          ++localFlowsOnReverseEdges[e];
+          localFlowsOnReverseEdges[e] += volumes[i];
         }
       }
     }

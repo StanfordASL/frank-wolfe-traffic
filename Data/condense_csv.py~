@@ -1,0 +1,20 @@
+inFile = open('od.csv','r')
+outFile = open('od_py.csv','w')
+
+prev_line = ' '
+count = 0
+
+for line in inFile:
+	
+    if line == prev_line:
+		count += 1
+
+	else:
+		output = prev_line +","+str(count)
+		outFile.write(output)
+		count = 1
+		prev_line = line
+
+outFile.close()
+
+inFile.close()

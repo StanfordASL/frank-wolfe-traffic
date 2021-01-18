@@ -47,7 +47,6 @@ public:
 		Timer timer;
 		++stats.numIterations;
 		if (verbose) std::cout << "Iteration " << stats.numIterations << ": " << std::flush;
-		std::cout << "odPairs.size()" << odPairs.size() << std::endl;
 	
 		shortestPathAlgo.customize();
 		stats.lastCustomizationTime = timer.elapsed();
@@ -74,17 +73,20 @@ public:
 				// Run multiple shortest-path computations simultaneously.
 				std::array<int, K> sources;
 				std::array<int, K> targets;
+				std::array<int, K> volumes;
 				
 				// Kiril: prob. need to add another array of "weight" 
 				sources.fill(odPairs[i].origin);
 				targets.fill(odPairs[i].destination);
+				volumes.fill(odPairs[i].volume);
 				
 				int k = 1;
 				for (; k < K && i + k * samplingInterval < odPairs.size(); ++k) {
 					sources[k] = odPairs[i + k * samplingInterval].origin;
 					targets[k] = odPairs[i + k * samplingInterval].destination;
+					volumes[k] = odPairs[i + k * samplingInterval].volume;
 				}
-				queryAlgo.run(sources, targets, k);
+				queryAlgo.run(sources, targets, volumes, k);
 
 				for (int j = 0; j < k; ++j) {
 					// Maintain the avg and max change in the OD-distances between the last two iterations.

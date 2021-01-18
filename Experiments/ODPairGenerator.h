@@ -23,7 +23,7 @@ class ODPairGenerator {
 
   // Returns an O-D pair with O and D picked uniformly at random.
   OriginDestination getRandomODPair() {
-    return {dist(rand), dist(rand)};
+	  return {dist(rand), dist(rand), 1};
   }
 
   // Returns a random O-D pair, where D has the specified Dijkstra rank from O.
@@ -37,7 +37,7 @@ class ODPairGenerator {
         assert(false);
       d = dijkstra.settleNextVertex();
     }
-    return {o, d};
+    return {o, d, 1};
   }
 
   // Returns a random O-D pair, where the distance between O and D is distance.
@@ -48,7 +48,7 @@ class ODPairGenerator {
     dijkstra.init({o});
     while (!dijkstra.queue.empty() && dijkstra.getDistance(d) < distance)
       d = dijkstra.settleNextVertex();
-    return {o, d};
+    return {o, d, 1};
   }
 
   // Returns the Dijkstra rank for the specified destination with respect to the given origin.

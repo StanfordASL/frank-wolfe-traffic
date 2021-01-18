@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
       out << origin << ',' << destination;
       if (hasZones) out << ',' << originZone << ',' << destinationZone;
       if (hasDep) out << ',' << dep;
-      out << ',' << gen.getDijkstraRankFor({origToLocalId[origin], origToLocalId[destination]});
+      out << ',' << gen.getDijkstraRankFor({origToLocalId[origin], origToLocalId[destination], 1});
       if (hasDist) out << ',' << dist;
       out << '\n';
     }

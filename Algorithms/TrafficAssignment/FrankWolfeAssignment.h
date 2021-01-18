@@ -132,7 +132,7 @@ public:
 			std::cout << std::flush;
 		}
 
-		// Perform iterations of Frank-Wolfe
+		// Perform iterations of Frank-Wolfe		
 		do {
 			stats.startIteration();
 			Timer timer;
@@ -145,6 +145,7 @@ public:
 			FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
 				const Vec4d flow = Vec4d().load(&trafficFlows[e]);
 				const Vec4i weight = truncate_to_int(objFunction.getEdgeWeights(e, flow));
+
 				if (inputGraph.numEdges() - e >= Vec4d::size())
 					weight.store(&inputGraph.travelCost(e));
 				else
@@ -179,7 +180,7 @@ public:
 													 return horizontal_add(sum);
 #endif
 												 }, 0, 1);
-
+			
 			// Move along the descent direction.
 #ifdef TA_NO_SIMD_LINE_SEARCH
 			FORALL_EDGES(inputGraph, e) {

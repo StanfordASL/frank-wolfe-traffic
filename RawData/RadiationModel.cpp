@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
 
                 // Generate the chosen number of trips.
                 for (int i = 0; i < numTrips; ++i)
-                  result.emplace_back(representative(srcY, srcX), representative(dstY, dstX));
+					result.emplace_back(representative(srcY, srcX), representative(dstY, dstX), 1);
               }
         ++bar;
       }

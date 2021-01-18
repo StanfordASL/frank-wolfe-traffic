@@ -39,7 +39,7 @@ class DijkstraAdapter {
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-	  void run(std::array<int, K>& sources, std::array<int, K>& targets, const int k) {
+	  void run(std::array<int, K>& sources, std::array<int, K>& targets, std::array<int, K>& volumes, const int k) {
 		// Run a centralized Dijkstra search.
 		search.run(sources, targets);
 
@@ -47,7 +47,7 @@ class DijkstraAdapter {
 		for (auto i = 0; i < k; ++i) {
 			for (const auto e : search.getReverseEdgePath(targets[i], i)) {
 				assert(e >= 0); assert(e < localFlowsOnForwardEdges.size());
-				++localFlowsOnForwardEdges[e];
+				localFlowsOnForwardEdges[e] += volumes[i];
 			}
 		}
     }
