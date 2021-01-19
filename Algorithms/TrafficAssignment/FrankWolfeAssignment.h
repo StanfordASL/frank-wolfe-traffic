@@ -30,9 +30,7 @@ public:
 	using InputGraph = InputGraphT;
 
 	// Constructs an assignment procedure based on the Frank-Wolfe method.
-	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs,
-						 std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile,
-						 const bool verbose = true)
+	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, const bool verbose = true)
 		: allOrNothingAssignment(graph, odPairs, verbose),
 		  inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
 		  trafficFlows(graph.numEdges()),
@@ -41,6 +39,7 @@ public:
 		  csv(csv),
 		  distanceFile(distFile),
 		  patternFile(patternFile),
+		  pathFile(pathFile),
 		  verbose(verbose) {
 		stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 	}
@@ -75,6 +74,7 @@ public:
 
 		// Run all-or-nothing assignemnt
 		allOrNothingAssignment.run(interval);
+		paths = allOrNothingAssignment.getPaths();
 
 		// Update flow on edges based on the first AoN assignment
 #ifdef TA_NO_SIMD_LINE_SEARCH
@@ -124,6 +124,26 @@ public:
 				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
 			}
 
+		if (pathFile.is_open())
+		{
+			for (auto i = 0; i < paths.size(); i++)
+			{
+				pathFile << substats.numIterations << ',' << i;
+				for(const auto& e : paths[i])
+				{
+					const int tail = inputGraph.edgeTail_z(e);
+					const int head = inputGraph.edgeHead(e);
+
+					pathFile << ",(" << tail << " " << head << ")";
+				}
+
+				pathFile << '\n';
+			}
+		}
+		
+
+		// TODO: write paths here
+
 		if (verbose) {
 			std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
 			std::cout << "  Total: " << stats.lastRunningTime << "ms\n";
@@ -156,6 +176,7 @@ public:
 			// Direction finding.
 			const int interval = substats.numIterations < samplingIntervals.size() ?  samplingIntervals[substats.numIterations] : 1;
 			allOrNothingAssignment.run(interval);
+			paths = allOrNothingAssignment.getPaths();
 
 			// Line search.
 			const double alpha = bisectionMethod([this](const double alpha) {
@@ -235,7 +256,23 @@ public:
 			
 					patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
 				}
-	  
+
+			if (pathFile.is_open())
+			{
+				for (auto i = 0; i < paths.size(); i++)
+				{
+					pathFile << substats.numIterations << ',' << i;
+					for(const auto& e : paths[i])
+					{
+						const int tail = inputGraph.edgeTail_z(e);
+						const int head = inputGraph.edgeHead(e);
+
+						pathFile << ",(" << tail << " " << head << ")";
+					}
+
+					pathFile << '\n';
+				}
+			}
 
 			if (verbose) {
 				std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
@@ -284,7 +321,9 @@ private:
 	std::ofstream& csv;                    // The output CSV file containing statistics.
 	std::ofstream& distanceFile;           // The output file containing the OD-distances.
 	std::ofstream& patternFile;            // The output file containing the flow patterns.
+	std::ofstream& pathFile;				// Output file for individual paths
 	const bool verbose;                    // Should informative messages be displayed?
+	std::vector<std::list<int>> paths;	// paths of the individual od pairs
 };
 
 // An alias template for a user-equilibrium (UE) traffic assignment.

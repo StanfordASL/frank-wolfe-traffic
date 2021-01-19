@@ -145,6 +145,11 @@ public:
 		return trafficFlows[e];
 	}
 
+	std::vector<std::list<int>>& getPaths()
+		{
+			return paths;
+		}
+
 	AllOrNothingAssignmentStats stats; // Statistics about the execution.
 
 private:

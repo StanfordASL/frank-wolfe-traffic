@@ -48,7 +48,7 @@ class DijkstraAdapter {
 			for (const auto e : search.getReverseEdgePath(targets[i], i)) {
 				assert(e >= 0); assert(e < localFlowsOnForwardEdges.size());
 				localFlowsOnForwardEdges[e] += volumes[i];
-				paths[i].push_back(e);
+				paths[i].push_front(e);
 			}
 		}
     }

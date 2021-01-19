@@ -121,6 +121,13 @@ class BiDijkstra {
     return reverseSearch.getReverseEdgePath(meetingVertices.vertex(i), i);
   }
 
+	// Returns the edges in the input graph on the path 
+  std::vector<int> getEdgePath(const int i = 0) {
+	  
+    assert(tentativeDistances[i] != INFTY);
+    return reverseSearch.getReverseEdgePath(meetingVertices.vertex(i), i);
+  }
+
  private:
   using DistanceLabel = typename DijkstraT::DistanceLabel; // The distance label of a vertex.
   using ParentLabel = typename DijkstraT::ParentLabel;     // The parent label of a vertex.
