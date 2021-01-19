@@ -62,6 +62,7 @@ class BiDijkstraAdapter {
           localFlowsOnReverseEdges[e] += volumes[i];
 		  paths[i].push_back(e);
         }
+		std::cout << "retrieval of paths in BiDijkstra is buggy (order of edges is incorrect, and there's an edge missing).\n";
       }
     }
 

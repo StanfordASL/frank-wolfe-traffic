@@ -49,12 +49,14 @@ void printUsage() {
 		"  -n <num>          the number of iterations (0 means use stopping criterion)\n"
 		"  -f <func>         the travel cost function\n"
 		"                      possible values:\n"
-		"                        bpr modified_bpr custom_bpr approx_bpr unaware_bpr\n"
-		"                        davidson modified_davidson (default) inverse\n"
+		"                        bpr modified_bpr custom_bpr (default) approx_bpr unaware_bpr\n"
+		"                        davidson modified_davidson inverse\n"
 		"  -a <algo>         the shortest-path algorithm\n"
-		"                      possible values: dijkstra (default) bidijkstra ch cch\n"
+		"                      possible values: dijkstra  bidijkstra ch (default) cch\n"
 		"  -ord <order>      the order of the OD-pairs\n"
 		"                      possible values: random input (default) sorted\n"
+		"  -exo <exo_flow>   value of exogenoes flow (only for custom_bpr); default value is 0\n"
+		"  -dummy <dummy_id> value of dummy id (only for custom_bpr); default value is 1351\n"
 		"  -s <seed>         start the random number generator with <seed>\n"
 		"  -U <num>          the maximum diameter of a cell (used for ordering OD-pairs)\n"
 		"  -si <intervals>   a blank-separated list of sampling intervals\n"
@@ -63,8 +65,6 @@ void printUsage() {
 		"  -o <file>         the output CSV file without file extension\n"
 		"  -dist <file>      output the OD-distances after each iteration in <file>\n"
 		"  -fp <file>        output the flow pattern after each iteration in <file>\n"
-		"  -exo <exo_flow>   value of exogenoes flow (only for custom_bpr)\n"
-		"  -dummy <dummy_id> value of dummy id (only for custom_bpr)\n"
 		"  -help             display this help and exit\n";  
 }
 
@@ -231,8 +231,8 @@ void assignTraffic(const CommandLineParser& clp) {
 		csv << "# Input graph: " << infilename << "\n";
 		csv << "# OD-pairs: " << odFilename << "\n";
 		csv << "# Objective: " << (clp.isSet("so") ? "SO" : "UE") << "\n";
-		csv << "# Function: " << clp.getValue<std::string>("f", "modified_davidson") << "\n";
-		csv << "# Shortest-path algo: " << clp.getValue<std::string>("a", "dijkstra") << "\n";
+		csv << "# Function: " << clp.getValue<std::string>("f", "custom_bpr") << "\n";
+		csv << "# Shortest-path algo: " << clp.getValue<std::string>("a", "ch") << "\n";
 		csv << "# Period of analysis: " << period << "h\n";
 		csv << "# Sampling intervals: [";
 		for (int i = 0, prevInterval = -1; i < intervals.size(); prevInterval = intervals[i++])
@@ -293,7 +293,7 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
 		TravelTimeAttribute>;
 	using Graph = StaticGraph<VertexAttributes, EdgeAttributes>;
 
-	const std::string algo = clp.getValue<std::string>("a", "dijkstra");
+	const std::string algo = clp.getValue<std::string>("a", "ch");
 	if (algo == "dijkstra") {
 		using Assignment = FrankWolfeAssignment<
 			ObjFunctionT, TravelCostFunctionT, trafficassignment::DijkstraAdapter, Graph>;
@@ -318,7 +318,7 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
 // Picks the travel cost function according to the command line options.
 template <template <typename> class ObjFunctionT>
 void chooseTravelCostFunction(const CommandLineParser& clp) {
-	const std::string func = clp.getValue<std::string>("f", "modified_davidson");
+	const std::string func = clp.getValue<std::string>("f", "custom_bpr");
 	if (func == "bpr")
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
 	else if (func == "modified_bpr")
