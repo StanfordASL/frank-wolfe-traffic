@@ -45,7 +45,7 @@ class CHAdapter {
     }
 
     // Computes shortest paths from each source to its target simultaneously.
-	  void run(std::array<int, K>& sources, std::array<int, K>& targets, std::array<int, K>& volumes, const int k) {
+	  void run(std::array<int, K>& sources, std::array<int, K>& targets, std::array<int, K>& volumes, std::array<std::list<int>, K>& paths, const int k) {
 		// Run a centralized CH search.
 		for (auto i = 0; i < K; ++i) {
 			sources[i] = ch.rank(sources[i]);
@@ -57,10 +57,12 @@ class CHAdapter {
 			for (const auto e : search.getUpEdgePath(i)) {
 				assert(e >= 0); assert(e < localFlowsOnUpEdges.size());
 				localFlowsOnUpEdges[e] += volumes[i];
+				paths[i].push_back(e);
 			}
 			for (const auto e : search.getDownEdgePath(i)) {
 				assert(e >= 0); assert(e < localFlowsOnDownEdges.size());
 				localFlowsOnDownEdges[e] += volumes[i];
+				paths[i].push_back(e);
 			}
 		}
 	}

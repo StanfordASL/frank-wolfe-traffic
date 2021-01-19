@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -33,13 +34,16 @@ public:
 		  shortestPathAlgo(graph),
 		  inputGraph(graph),
 		  odPairs(odPairs),
-		  verbose(verbose) {
+		  verbose(verbose)
+	{
 		Timer timer;
 		shortestPathAlgo.preprocess();
 		stats.totalPreprocessingTime = timer.elapsed();
 		stats.lastRoutingTime = stats.totalPreprocessingTime;
 		stats.totalRoutingTime = stats.totalPreprocessingTime;
 		if (verbose) std::cout << "  Prepro: " << stats.totalPreprocessingTime << "ms" << std::endl;
+		paths = std::vector<std::list<int>>(odPairs.size(), std::list<int>());
+		
 	}
 
 	// Assigns all OD-flows to their currently shortest paths.
@@ -74,6 +78,7 @@ public:
 				std::array<int, K> sources;
 				std::array<int, K> targets;
 				std::array<int, K> volumes;
+				std::array<std::list<int>, K> paths_local;
 				
 				// Kiril: prob. need to add another array of "weight" 
 				sources.fill(odPairs[i].origin);
@@ -86,7 +91,7 @@ public:
 					targets[k] = odPairs[i + k * samplingInterval].destination;
 					volumes[k] = odPairs[i + k * samplingInterval].volume;
 				}
-				queryAlgo.run(sources, targets, volumes, k);
+				queryAlgo.run(sources, targets, volumes, paths_local, k);
 
 				for (int j = 0; j < k; ++j) {
 					// Maintain the avg and max change in the OD-distances between the last two iterations.
@@ -99,6 +104,8 @@ public:
 					stats.lastDistances[i + j * samplingInterval] = dist;
 					avgChange += std::max(0.0, change);
 					maxChange = std::max(maxChange, change);
+
+					paths[i + j * samplingInterval] = paths_local[j];
 				}
 				++bar;
 			}
@@ -150,6 +157,7 @@ private:
 	const InputGraph& inputGraph;       // The input graph.
 	const ODPairs& odPairs;             // The OD-pairs to be assigned onto the graph.
 	AlignedVector<int> trafficFlows;    // The traffic flows on the edges.
+	std::vector<std::list<int>> paths; // paths of the individual od pairs
 	const bool verbose;                 // Should informative messages be displayed?
 	
 };
