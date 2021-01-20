@@ -30,7 +30,7 @@ public:
 	using InputGraph = InputGraphT;
 
 	// Constructs an assignment procedure based on the Frank-Wolfe method.
-	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, const bool verbose = true)
+	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true)
 		: allOrNothingAssignment(graph, odPairs, verbose),
 		  inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
 		  trafficFlows(graph.numEdges()),
@@ -40,6 +40,7 @@ public:
 		  distanceFile(distFile),
 		  patternFile(patternFile),
 		  pathFile(pathFile),
+		  weightFile(weightFile),
 		  verbose(verbose) {
 		stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 	}
@@ -53,6 +54,9 @@ public:
 			assert(samplingIntervals[i - 1] % samplingIntervals[i] == 0);
 		}
 		const AllOrNothingAssignmentStats& substats = allOrNothingAssignment.stats;
+
+		std::vector<double> weights = std::vector<double>(numIterations, 0.0);
+		weights[0]=1.0;
 
 		// Initialization.
 		Timer timer;
@@ -226,6 +230,13 @@ public:
 			}
 			stats.totalTravelCost = horizontal_add(totalCost);
 #endif
+
+			// update weights vector
+			for (auto i = 0; i < substats.numIterations - 1; i++)
+				weights[i] = weights[i] * (1.0-alpha);
+
+			weights[substats.numIterations-1] = alpha;
+						
 			stats.lastRunningTime = timer.elapsed();
 			stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
 			stats.objFunctionValue = objFunction(trafficFlows);
@@ -297,6 +308,10 @@ public:
 			std::cout << "  Total: " << stats.totalRunningTime << "ms\n";
 			std::cout << std::flush;
 		}
+
+		if (weightFile.is_open())
+			for (auto i = 0; i < weights.size(); i++)
+				weightFile << i+1 << ',' << weights[i] << '\n';
 	}
 
 	// Returns the traffic flow on edge e.
@@ -322,6 +337,7 @@ private:
 	std::ofstream& distanceFile;           // The output file containing the OD-distances.
 	std::ofstream& patternFile;            // The output file containing the flow patterns.
 	std::ofstream& pathFile;				// Output file for individual paths
+	std::ofstream& weightFile;				// Output file for individual paths
 	const bool verbose;                    // Should informative messages be displayed?
 	std::vector<std::list<int>> paths;	// paths of the individual od pairs
 };

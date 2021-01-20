@@ -60,11 +60,13 @@ void printUsage() {
 		"  -s <seed>         start the random number generator with <seed>\n"
 		"  -U <num>          the maximum diameter of a cell (used for ordering OD-pairs)\n"
 		"  -si <intervals>   a blank-separated list of sampling intervals\n"
-		"  -i <file>         the input graph in binary format\n"
+		"  -i <path>         the input graph in binary format\n"
 		"  -od <file>        the OD-pairs to be assigned\n"
 		"  -o <file>         the output CSV file without file extension\n"
 		"  -dist <file>      output the OD-distances after each iteration in <file>\n"
 		"  -fp <file>        output the flow pattern after each iteration in <file>\n"
+		"  -paths <file>     output the od-paths after each iteration in <file>\n"
+		"  -w <file>		 output the weights of paths based on their interation in <file>\n"
 		"  -help             display this help and exit\n";  
 }
 
@@ -172,6 +174,7 @@ void assignTraffic(const CommandLineParser& clp) {
 	const std::string distanceFilename = clp.getValue<std::string>("dist");
 	const std::string patternFilename = clp.getValue<std::string>("fp");
 	const std::string pathFilename = clp.getValue<std::string>("paths");
+	const std::string weightFilename = clp.getValue<std::string>("w");
 	const std::string ord = clp.getValue<std::string>("ord", "input");
 	const int maxDiam = clp.getValue<int>("U", 40);
 	const double period = clp.getValue<double>("p", 1);
@@ -272,7 +275,17 @@ void assignTraffic(const CommandLineParser& clp) {
 		pathFile << "numIteration,odPair,edges\n";
 	}
 
-	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, pathFile, clp.isSet("v"));
+	std::ofstream weightFile;
+	if (!weightFilename.empty()) {
+		weightFile.open(weightFilename + ".csv");
+		if (!weightFile.good())
+			throw std::invalid_argument("file cannot be opened -- '" + weightFilename + ".csv'");
+		if (!csvFilename.empty())
+			weightFile << "# Main file: " << csvFilename << ".csv\n";
+		weightFile << "iteration,weight\n";
+	}
+
+	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, pathFile, weightFile, clp.isSet("v"));
 
 	if (csv.is_open()) {
 		csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
