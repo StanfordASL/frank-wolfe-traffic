@@ -1,15 +1,14 @@
-# Routing Framework
+# Modified Routing Framework
 
-This repository contains the C++14 source code used in the following publications/submissions:
+This repository contains C++14 implementation for congestion-aware traffic assignment and autonmous mobility-on-demand routing. The code is based on the repository [Routing Framework](https://github.com/vbuchhold/routing-framework). The main additions that are provided in the current repository include the following:
 
-* Valentin Buchhold, Peter Sanders, and Dorothea Wagner. Real-Time Traffic Assignment Using Fast
-  Queries in Customizable Contraction Hierarchies. In Gianlorenzo D'Angelo, editor, *Proceedings of
-  the 17th International Symposium on Experimental Algorithms (SEA'18)*, volume 103 of *Leibniz
-  International Proceedings in Informatics (LIPIcs)*, pages 27:1–27:15. Schloss Dagstuhl, 2018.
-  [doi:10.4230/LIPIcs.SEA.2018.27](http://dx.doi.org/10.4230/LIPIcs.SEA.2018.27).
-* Valentin Buchhold, Peter Sanders, and Dorothea Wagner. Real-Time Traffic Assignment Using
-  Engineered Customizable Contraction Hierarchies. Submitted to the ACM Journal of Experimental
-  Algorithmics.
+* Support for computing rebalancing flows for autonomous mobility-on-demand routing, as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
+
+* Batched OD-pairs that specify the number of passengers travelling between every origin-destination, rather than having exactly one passenger for each pair.
+
+* Network graphs can be specified as CSV paths.
+
+* Exogeneous flows can be specified to simulate exising traffic flow that is not controlled by the algorithm.
 
 ## Prerequisites
 
@@ -41,58 +40,14 @@ $ cd vectorclass && sudo mkdir /usr/local/include/vectorclass && sudo cp *.h spe
 
 ## Building
 
-Once you installed the packages, simply type `scons` at the top-level directory of the framework:
+Once you installed the packages, simply type `scons` at the top-level directory of the framework to run in Devel mode:
 
 ```
 $ scons
 ```
+For Release or Debug modes use either `scons -Q variant-Release` or `scons -Q variant-Debug`.
 
-## Experiments in *Real-Time Traffic Assignment Using Fast Queries in Customizable Contraction Hierarchies*
-
-To get the version of the source code used in the publication, check out the `SEA18` tag:
-
-```
-$ git checkout SEA18
-```
-
-To run the experiments presented in the publication, enter the following commands at the top-level
-directory of the framework:
-
-```
-$ cd Publications/FastTA/SEA18
-$ ./PrepareP2P <path-to-xatf-data> ~
-$ ./PrepareTA <path-to-visum-data> <path-to-mobitopp-data> ~
-$ ./ConductP2P ~
-$ ./ConductTA ~
-```
-
-*Note: This repository contains the full source code used in the publication. However,
-unfortunately the data used in the experiments is proprietary and not publicly available.*
-
-## Experiments in *Real-Time Traffic Assignment Using Engineered Customizable Contraction Hierarchies*
-
-To get the version of the source code used in the publication, check out the `JEA18` tag:
-
-```
-$ git checkout JEA18
-```
-
-To run the experiments presented in the publication, enter the following commands at the top-level
-directory of the framework:
-
-```
-$ cd Publications/FastTA/JEA
-$ ./PrepareP2P <path-to-xatf-data> ~
-$ ./PrepareTA <path-to-visum-data> <path-to-mobitopp-data> ~
-$ ./ConductP2P ~
-$ ./ConductTA ~
-$ ./ConductManyCoreExperiments ~
-```
-
-*Note: This repository contains the full source code used in the publication. However,
-unfortunately the data used in the experiments is proprietary and not publicly available.*
-
-## SCons Integration for Eclipse
+### SCons Integration for Eclipse
 
 The plugin SConsolidator provides tool integration for SCons in Eclipse.
 Install it via its update site `http://www.sconsolidator.com/update`.
