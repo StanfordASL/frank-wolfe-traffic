@@ -1,8 +1,8 @@
 # Modified Routing Framework
 
-This repository contains C++14 implementation for congestion-aware traffic assignment and autonmous mobility-on-demand routing. The code is based on the repository [Routing Framework](https://github.com/vbuchhold/routing-framework). The main additions that are provided in the current repository include the following:
+This repository contains C++14 implementation for congestion-aware traffic assignment (TA) and autonmous mobility-on-demand routing (AMoD). The code is based on the repository [Routing Framework](https://github.com/vbuchhold/routing-framework). The main additions that are provided in the current repository include the following:
 
-* Support for computing rebalancing flows for autonomous mobility-on-demand routing, as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
+* Support for computing rebalancing flows for autonomous mobility-on-demand routing (AMoD), as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
 
 * Batched OD-pairs that specify the number of passengers travelling between every origin-destination, rather than having exactly one passenger for each pair.
 
@@ -79,3 +79,32 @@ To import the framework as a SCons project into Eclipse, follow these steps:
 3. Choose the top-level directory of the framework.
 4. Choose the menu `Project`, `Properties`, `C/C++ Build`, `Settings`, `Binary Parsers`.
 5. Enable `Elf Parser`.
+
+## Useage
+The main program for computing TA and AMoD is provided in `AssignTraffic`. Basic useage is specified in the `help` option:
+
+```
+Build/Devel/Launchers/./AssignTraffic -help
+```
+
+In addition to the running parameters, the main inputs consist of a graph that is given in a binary representation and a CSV file describing the OD pairs. The program `ConvertGraph` can be used to convert graphs represented in other formats (including CSV) into a binary format.
+
+### Input representation
+* A CSV graph is defined via a vertex and edge CSV files, which can be then converted into a binary format. The vertex file specifies vertex IDs and their corresponding xy coordinates. E.g.,
+
+|vert_id|xcoord|ycoord|
+|-------|------|------|
+|0|-74.0168143|40.7051367|
+|1|-74.0164164|40.7048817|
+|2|-74.0164046|40.7047995|
+|...|...|...|
+
+* The edge file specifies the edges (with respect to the vertex IDs) and their attributes, where edge length is given in meters, capacity is in hours, and speed denotes the speed in free flow (km/h).  E.g.,
+
+|edge_tail|edge_head|length|capacity|speed|
+|---------|---------|------|--------|-----|
+|3|0|172|14783|56|
+|2|1|9|14783|56|
+|8|1|121|5279|40|
+|0|2|51|10559|40|
+|...|...|...|...|...|
