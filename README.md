@@ -99,7 +99,7 @@ In addition to the running parameters, the main inputs consist of a graph that i
 |2|-74.0164046|40.7047995|
 |...|...|...|
 
-* The edge file specifies the edges (with respect to the vertex IDs) and their attributes, where edge length is given in meters, capacity is in hours, and speed denotes the speed in free flow (km/h).  E.g.,
+* The edge file specifies the edges (with respect to the vertex IDs) and their attributes, where edge length is given in meters, capacity specifies the number of passing vehicles in an hour, and speed denotes the free-flow speed (km/h).  E.g.,
 
 |edge_tail|edge_head|length|capacity|speed|
 |---------|---------|------|--------|-----|
@@ -108,3 +108,23 @@ In addition to the running parameters, the main inputs consist of a graph that i
 |8|1|121|5279|40|
 |0|2|51|10559|40|
 |...|...|...|...|...|
+
+* The od-pairs file specifies origin and destination vertices for a given demand, and the volume (number of vehicles or people). E.g.,
+
+|origin|destination|volume|
+|------|-----------|------|
+|20|31|96|
+|20|41|120|
+|20|57|72|
+|20|65|88|
+
+### Output representation
+Below we describe the various outputs that the algorithm can produce according to the flags given to `AssignTraffic'.
+
+* `-o`: Summary output file that specifies running time and solution quality according with respect to the algorithm iteration.
+
+* `-fp': Flow pattern obtained after each algorithm iteration, which specifies the total number of vehicles going through any given edge in the graph.
+
+* `-paths': Specifies the path computed for every OD pair for a given iteration of the algorithm.
+
+* `-w': Specifies the weights of the aforementioned paths in the final solution. 
