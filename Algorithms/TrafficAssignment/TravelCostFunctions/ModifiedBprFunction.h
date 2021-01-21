@@ -9,7 +9,6 @@ class ModifiedBprFunction {
  public:
   // Constructs a BPR function.
 	ModifiedBprFunction(const GraphT& graph) : graph(graph), bpr(graph) {
-		std::cout << "here" << std::endl;
 	}
 
   // Returns the travel time on edge e, given the flow x on e.

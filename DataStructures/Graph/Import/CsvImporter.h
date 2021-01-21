@@ -223,6 +223,7 @@ inline NumLanesAttribute::Type CsvImporter::getValue<NumLanesAttribute>() const 
 template <>
 inline TravelTimeAttribute::Type CsvImporter::getValue<TravelTimeAttribute>() const {
   return std::round(36.0 * currentEdge.length / currentEdge.freeFlowSpeed);
+  // KIRIL: 36.0 used to be 360. Need to check if this is correct.
 }
 
 // Returns the value of the vertex ID attribute for the current vertex.

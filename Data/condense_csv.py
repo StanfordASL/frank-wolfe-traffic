@@ -1,5 +1,5 @@
-inFile = open('od_large.csv','r')
-outFile = open('od_py_large.csv','w')
+inFile = open('od_huge.csv','r')
+outFile = open('od_py_huge.csv','w')
 
 prev_line = ' '
 count = 0

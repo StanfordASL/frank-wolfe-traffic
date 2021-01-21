@@ -117,6 +117,7 @@ In addition to the running parameters, the main inputs consist of a graph that i
 |20|41|120|
 |20|57|72|
 |20|65|88|
+|...|...|...|
 
 ### Output representation
 Below we describe the various outputs that the algorithm can produce according to the flags given to `AssignTraffic'.

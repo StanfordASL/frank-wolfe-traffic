@@ -118,7 +118,7 @@ public:
 			for (const auto dist : substats.lastDistances)
 				distanceFile << substats.numIterations << ',' << dist << '\n';
 
-		if (patternFile.is_open()) // KIRIL: this is where the flow data is output
+		/*if (patternFile.is_open()) // KIRIL: this is where the flow data is output
 			FORALL_EDGES(inputGraph, e)
 			{			
 				const int tail = inputGraph.edgeTail_z(e);
@@ -126,7 +126,7 @@ public:
 				const auto flow = trafficFlows[e];
 			
 				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
-			}
+				}*/
 
 		if (pathFile.is_open())
 		{
@@ -144,9 +144,6 @@ public:
 				pathFile << '\n';
 			}
 		}
-		
-
-		// TODO: write paths here
 
 		if (verbose) {
 			std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
@@ -255,10 +252,7 @@ public:
 				for (const auto dist : substats.lastDistances)
 					distanceFile << substats.numIterations << ',' << dist << '\n';
 
-			//if (patternFile.is_open() && (substats.numIterations == numIterations - 1))
-			if (patternFile.is_open())
-				// kiril modified this in order to read 
-				//for (const auto flow : trafficFlows)
+			if (patternFile.is_open() && (substats.numIterations == numIterations - 1))
 				FORALL_EDGES(inputGraph, e)
 				{
 					const int tail = inputGraph.edgeTail_z(e);
