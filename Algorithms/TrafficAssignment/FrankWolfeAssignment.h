@@ -252,16 +252,6 @@ public:
 				for (const auto dist : substats.lastDistances)
 					distanceFile << substats.numIterations << ',' << dist << '\n';
 
-			if (patternFile.is_open() && (substats.numIterations == numIterations - 1))
-				FORALL_EDGES(inputGraph, e)
-				{
-					const int tail = inputGraph.edgeTail_z(e);
-					const int head = inputGraph.edgeHead(e);
-					const auto flow = trafficFlows[e];
-			
-					patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
-				}
-
 			if (pathFile.is_open())
 			{
 				for (auto i = 0; i < paths.size(); i++)
@@ -279,6 +269,9 @@ public:
 				}
 			}
 
+			std::cout << substats.numIterations << std::endl;
+			
+
 			if (verbose) {
 				std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
 				std::cout << "  Total: " << stats.lastRunningTime << "ms\n";
@@ -290,6 +283,16 @@ public:
 			}
 		} while ((numIterations > 0 || substats.avgChangeInDistances > 1e-2) &&
 				 (numIterations == 0 || substats.numIterations != numIterations));
+
+		if (patternFile.is_open())
+				FORALL_EDGES(inputGraph, e)
+				{
+					const int tail = inputGraph.edgeTail_z(e);
+					const int head = inputGraph.edgeHead(e);
+					const auto flow = trafficFlows[e];
+			
+					patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
+				}
 
 		if (verbose) {
 			std::cout << "Total:\n";
