@@ -269,7 +269,7 @@ public:
 				}
 			}
 
-			std::cout << substats.numIterations << std::endl;
+			
 			
 
 			if (verbose) {
