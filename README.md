@@ -124,8 +124,8 @@ Below we describe the various outputs that the algorithm can produce according t
 
 * `-o`: Summary output file that specifies running time and solution quality according with respect to the algorithm iteration.
 
-* `-fp': Flow pattern obtained after each algorithm iteration, which specifies the total number of vehicles going through any given edge in the graph.
+* `-fp`: Flow pattern obtained after each algorithm iteration, which specifies the total number of vehicles going through any given edge in the graph.
 
-* `-paths': Specifies the path computed for every OD pair for a given iteration of the algorithm.
+* `-paths`: Specifies the path computed for every OD pair for a given iteration of the algorithm.
 
-* `-w': Specifies the weights of the aforementioned paths in the final solution. 
+* `-w`: Specifies the weights of the aforementioned paths in the final solution. 

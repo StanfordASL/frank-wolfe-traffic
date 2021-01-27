@@ -118,16 +118,6 @@ public:
 			for (const auto dist : substats.lastDistances)
 				distanceFile << substats.numIterations << ',' << dist << '\n';
 
-		/*if (patternFile.is_open()) // KIRIL: this is where the flow data is output
-			FORALL_EDGES(inputGraph, e)
-			{			
-				const int tail = inputGraph.edgeTail_z(e);
-				const int head = inputGraph.edgeHead(e);
-				const auto flow = trafficFlows[e];
-			
-				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
-				}*/
-
 		if (pathFile.is_open())
 		{
 			for (auto i = 0; i < paths.size(); i++)
@@ -182,13 +172,20 @@ public:
 			// Line search.
 			const double alpha = bisectionMethod([this](const double alpha) {
 #ifdef TA_NO_SIMD_LINE_SEARCH
-													 double sum = 0;
+													 long double sum = 0;
 													 FORALL_EDGES(inputGraph, e) {
-														 const double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
+														 const long double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
 														 sum += direction * objFunction.getEdgeWeight(e, trafficFlows[e] + alpha * direction);
 													 }
 													 return sum;
 #else
+													 long double sum = 0;
+													 FORALL_EDGES(inputGraph, e) {
+														 const long double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
+														 sum += direction * objFunction.getEdgeWeight(e, trafficFlows[e] + alpha * direction);
+													 }
+													 return sum;
+													 /*
 													 Vec4d sum = 0;
 													 FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
 														 const Vec4d oldFlow = Vec4d().load(&trafficFlows[e]);
@@ -199,7 +196,7 @@ public:
 															 tmp.cutoff(inputGraph.numEdges() - e);
 														 sum += tmp;
 													 }
-													 return horizontal_add(sum);
+													 return horizontal_add(sum);*/
 #endif
 												 }, 0, 1);
 			
@@ -251,7 +248,7 @@ public:
 			if (distanceFile.is_open())
 				for (const auto dist : substats.lastDistances)
 					distanceFile << substats.numIterations << ',' << dist << '\n';
-
+			
 			if (pathFile.is_open())
 			{
 				for (auto i = 0; i < paths.size(); i++)
@@ -284,16 +281,6 @@ public:
 		} while ((numIterations > 0 || substats.avgChangeInDistances > 1e-2) &&
 				 (numIterations == 0 || substats.numIterations != numIterations));
 
-		if (patternFile.is_open())
-				FORALL_EDGES(inputGraph, e)
-				{
-					const int tail = inputGraph.edgeTail_z(e);
-					const int head = inputGraph.edgeHead(e);
-					const auto flow = trafficFlows[e];
-			
-					patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
-				}
-
 		if (verbose) {
 			std::cout << "Total:\n";
 			std::cout << "  Checksum: " << substats.totalChecksum;
@@ -305,6 +292,17 @@ public:
 			std::cout << "  Total: " << stats.totalRunningTime << "ms\n";
 			std::cout << std::flush;
 		}
+
+		if (patternFile.is_open()) // KIRIL: this is where the flow data is output
+			FORALL_EDGES(inputGraph, e)
+			{			
+				const int tail = inputGraph.edgeTail_z(e);
+				const int head = inputGraph.edgeHead(e);
+				const auto flow = trafficFlows[e];
+			
+				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
+			}
+
 
 		if (weightFile.is_open())
 			for (auto i = 0; i < weights.size(); i++)
