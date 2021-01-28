@@ -30,17 +30,17 @@ public:
 	using InputGraph = InputGraphT;
 
 	// Constructs an assignment procedure based on the Frank-Wolfe method.
-	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true)
+	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, const bool verbose = true)
 		: allOrNothingAssignment(graph, odPairs, verbose),
-		  inputGraph(graph),	/*inputGraphReversed(graph.getReverseGraph()),*/
+		  graph(graph),	
 		  trafficFlows(graph.numEdges()),
+		  pointOfSight(graph.numEdges()),
 		  travelCostFunction(graph),
 		  objFunction(travelCostFunction),
 		  csv(csv),
 		  distanceFile(distFile),
 		  patternFile(patternFile),
 		  pathFile(pathFile),
-		  weightFile(weightFile),
 		  verbose(verbose) {
 		stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 	}
@@ -54,27 +54,15 @@ public:
 			assert(samplingIntervals[i - 1] % samplingIntervals[i] == 0);
 		}
 		const AllOrNothingAssignmentStats& substats = allOrNothingAssignment.stats;
-
-		std::vector<double> weights = std::vector<double>(numIterations, 0.0);
-		weights[0]=1.0;
-
+		
 		// Initialization.
 		Timer timer;
 
-		FORALL_EDGES(inputGraph, e)
-			inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, 0);
-
+		// Run first  all-or-nothing assignemnt
 		const int interval = !samplingIntervals.empty() ? samplingIntervals[0] : 1;
-
-		// Run all-or-nothing assignemnt
-		allOrNothingAssignment.run(interval);
+		
+		determineInitialSolution(interval);
 		paths = allOrNothingAssignment.getPaths();
-
-		// Update flow on edges based on the first AoN assignment
-		FORALL_EDGES(inputGraph, e) {
-			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
-			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
-		}
 
 		stats.lastRunningTime = timer.elapsed();
 		stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
@@ -100,9 +88,8 @@ public:
 				pathFile << substats.numIterations << ',' << i;
 				for(const auto& e : paths[i])
 				{
-					const int tail = inputGraph.edgeTail_z(e);
-					const int head = inputGraph.edgeHead(e);
-
+					const int tail = graph.edgeTail_z(e);
+					const int head = graph.edgeHead(e);
 					pathFile << ",(" << tail << " " << head << ")";
 				}
 
@@ -124,37 +111,16 @@ public:
 			Timer timer;
 
 			// Update travel costs
-			FORALL_EDGES(inputGraph, e)
-				inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
+			updateTravelCosts();
 
 			// Direction finding.
 			const int interval = substats.numIterations < samplingIntervals.size() ?  samplingIntervals[substats.numIterations] : 1;
-			allOrNothingAssignment.run(interval);
+			findDescentDirection(interval);
 			paths = allOrNothingAssignment.getPaths();
 
-			// Line search.
-			const double alpha = bisectionMethod([this](const double alpha) {
-													 long double sum = 0;
-													 FORALL_EDGES(inputGraph, e) {
-														 const long double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
-														 sum += direction * objFunction.getEdgeWeight(e, trafficFlows[e] + alpha * direction);
-													 }
-													 return sum;
-												 }, 0, 1);
-			
-			// Move along the descent direction.
-			FORALL_EDGES(inputGraph, e) {
-				const double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
-				trafficFlows[e] = trafficFlows[e] + alpha * direction;
-				stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
-			}
-
-			// update weights vector
-			for (auto i = 0; i < substats.numIterations - 1; i++)
-				weights[i] = weights[i] * (1.0-alpha);
-
-			weights[substats.numIterations-1] = alpha;
-						
+			const auto tau = findMoveSize();
+			moveAlongDescentDirection(tau);
+									
 			stats.lastRunningTime = timer.elapsed();
 			stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
 			stats.objFunctionValue = objFunction(trafficFlows);
@@ -180,8 +146,8 @@ public:
 					pathFile << substats.numIterations << ',' << i;
 					for(const auto& e : paths[i])
 					{
-						const int tail = inputGraph.edgeTail_z(e);
-						const int head = inputGraph.edgeHead(e);
+						const int tail = graph.edgeTail_z(e);
+						const int head = graph.edgeHead(e);
 
 						pathFile << ",(" << tail << " " << head << ")";
 					}
@@ -216,26 +182,87 @@ public:
 		}
 
 		if (patternFile.is_open()) // KIRIL: this is where the flow data is output
-			FORALL_EDGES(inputGraph, e)
+			FORALL_EDGES(graph, e)
 			{			
-				const int tail = inputGraph.edgeTail_z(e);
-				const int head = inputGraph.edgeHead(e);
+				const int tail = graph.edgeTail_z(e);
+				const int head = graph.edgeHead(e);
 				const auto flow = trafficFlows[e];
 			
-				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << inputGraph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << inputGraph.capacity(e) << ',' << flow << '\n';
+				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << graph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << graph.capacity(e) << ',' << flow << '\n';
 			}
-
-
-		if (weightFile.is_open())
-			for (auto i = 0; i < weights.size(); i++)
-				weightFile << i+1 << ',' << weights[i] << '\n';
 	}
+
+	void determineInitialSolution(const int interval) {
+		FORALL_EDGES(graph, e)
+			graph.travelCost(e) = objFunction.derivative(e, 0);
+		
+		allOrNothingAssignment.run(interval);
+
+		FORALL_EDGES(graph, e)
+		{
+			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
+			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
+		}
+	}
+
+	 // Updates traversal costs.
+  void updateTravelCosts() {
+    FORALL_EDGES(graph, e) 
+		graph.travelCost(e) = objFunction.derivative(e, trafficFlows[e]);
+  }
+
+	// Finds the descent direction.
+  void findDescentDirection(const int skipInterval) {
+    allOrNothingAssignment.run(skipInterval);
+
+    if (allOrNothingAssignment.stats.numIterations == 2) {
+      FORALL_EDGES(graph, e)
+        pointOfSight[e] = allOrNothingAssignment.trafficFlowOn(e);
+      return;
+    }
+
+    auto num = 0.0, den = 0.0;
+    FORALL_EDGES(graph, e) {
+      const auto residualDirection = pointOfSight[e] - trafficFlows[e];
+	  //// KIRIL: stopped here! Figure out what is the second derivative
+      const auto secondDerivative = objFunction.secondDerivative(e, trafficFlows[e]);
+      const auto fwDirection = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
+      num += residualDirection * secondDerivative * fwDirection;
+      den += residualDirection * secondDerivative * (fwDirection - residualDirection);
+    }
+
+    const auto alpha = std::min(std::max(0.0, num / den), 1 - 1e-15);
+    
+    FORALL_EDGES(graph, e)
+      pointOfSight[e] = alpha * pointOfSight[e] + (1 - alpha) * allOrNothingAssignment.trafficFlowOn(e);
+  }
+
+	// Find the optimal move size.
+  double findMoveSize() const {
+    return bisectionMethod([this](const double tau) {
+      auto sum = 0.0;
+      FORALL_EDGES(graph, e) {
+        const auto direction = pointOfSight[e] - trafficFlows[e];
+        sum += direction * objFunction.derivative(e, trafficFlows[e] + tau * direction);
+      }
+      return sum;
+    }, 0, 1);
+  }
+
+	  // Moves along the descent direction.
+  void moveAlongDescentDirection(const double tau) {
+    FORALL_EDGES(graph, e)
+	{
+      trafficFlows[e] += tau * (pointOfSight[e] - trafficFlows[e]);
+	  stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
+	}
+  }
 
 	
 
 	// Returns the traffic flow on edge e.
 	const double& trafficFlowOn(const int e) const {
-		assert(e >= 0); assert(e < inputGraph.numEdges());
+		assert(e >= 0); assert(e < graph.numEdges());
 		return trafficFlows[e];
 	}
 
@@ -247,16 +274,16 @@ private:
 	using ObjFunction = ObjFunctionT<TravelCostFunction>;
 
 	AllOrNothing allOrNothingAssignment;   // The all-or-nothing assignment algo used as a subroutine.
-	InputGraphT& inputGraph;               // The input graph.
-	// InputGraphT inputGraphReversed;        // Reversed input graph (needed to get edge tails)
+	InputGraphT& graph;               // The input graph.
+	// InputGraphT graphReversed;        // Reversed input graph (needed to get edge tails)
 	AlignedVector<double> trafficFlows;    // The traffic flows on the edges.
+	std::vector<double> pointOfSight;            // The point defining the descent direction d = s - x
 	TravelCostFunction travelCostFunction; // A functor returning the travel cost on an edge.
 	ObjFunction objFunction;               // The objective function to be minimized (UE or SO).
 	std::ofstream& csv;                    // The output CSV file containing statistics.
 	std::ofstream& distanceFile;           // The output file containing the OD-distances.
 	std::ofstream& patternFile;            // The output file containing the flow patterns.
 	std::ofstream& pathFile;				// Output file for individual paths
-	std::ofstream& weightFile;				// Output file for individual paths
 	const bool verbose;                    // Should informative messages be displayed?
 	std::vector<std::list<int>> paths;	// paths of the individual od pairs
 };

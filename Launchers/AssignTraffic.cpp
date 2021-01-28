@@ -20,13 +20,12 @@
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/SystemOptimum.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction.h"
+/*#include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/ApproxBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/UnawareBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/DavidsonFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/InverseFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedDavidsonFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedDavidsonFunction.h"*/
 #include "Algorithms/TrafficAssignment/FrankWolfeAssignment.h"
 #include "DataStructures/Graph/Attributes/CapacityAttribute.h"
 #include "DataStructures/Graph/Attributes/EdgeIdAttribute.h"
@@ -66,7 +65,6 @@ void printUsage() {
 		"  -dist <file>      output the OD-distances after each iteration in <file>\n"
 		"  -fp <file>        output the flow pattern after each iteration in <file>\n"
 		"  -paths <file>     output the od-paths after each iteration in <file>\n"
-		"  -w <file>		 output the weights of paths based on their interation in <file>\n"
 		"  -help             display this help and exit\n";  
 }
 
@@ -174,7 +172,6 @@ void assignTraffic(const CommandLineParser& clp) {
 	const std::string distanceFilename = clp.getValue<std::string>("dist");
 	const std::string patternFilename = clp.getValue<std::string>("fp");
 	const std::string pathFilename = clp.getValue<std::string>("paths");
-	const std::string weightFilename = clp.getValue<std::string>("w");
 	const std::string ord = clp.getValue<std::string>("ord", "input");
 	const int maxDiam = clp.getValue<int>("U", 40);
 	const double period = clp.getValue<double>("p", 1);
@@ -275,17 +272,7 @@ void assignTraffic(const CommandLineParser& clp) {
 		pathFile << "numIteration,odPair,edges\n";
 	}
 
-	std::ofstream weightFile;
-	if (!weightFilename.empty()) {
-		weightFile.open(weightFilename + ".csv");
-		if (!weightFile.good())
-			throw std::invalid_argument("file cannot be opened -- '" + weightFilename + ".csv'");
-		if (!csvFilename.empty())
-			weightFile << "# Main file: " << csvFilename << ".csv\n";
-		weightFile << "iteration,weight\n";
-	}
-
-	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, pathFile, weightFile, clp.isSet("v"));
+	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, pathFile, clp.isSet("v"));
 
 	if (csv.is_open()) {
 		csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
@@ -334,7 +321,7 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
 	const std::string func = clp.getValue<std::string>("f", "custom_bpr");
 	if (func == "bpr")
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
-	else if (func == "modified_bpr")
+	/*else if (func == "modified_bpr")
 		chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
 	else if (func == "custom_bpr")
 		chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
@@ -347,7 +334,7 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
 	else if (func == "modified_davidson")
 		chooseShortestPathAlgo<ObjFunctionT, ModifiedDavidsonFunction>(clp);
 	else if (func == "inverse")
-		chooseShortestPathAlgo<ObjFunctionT, InverseFunction>(clp);
+	chooseShortestPathAlgo<ObjFunctionT, InverseFunction>(clp);*/
 	else
 		throw std::invalid_argument("unrecognized travel cost function -- '" + func + "'");
 }

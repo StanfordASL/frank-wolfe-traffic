@@ -23,13 +23,13 @@ class UserEquilibrium {
   }
 
   // Returns the weight of edge e, given the flow x on e.
-  double getEdgeWeight(const int e, const double x) const {
+  double derivative(const int e, const double x) const {
     return travelCostFunction(e, x);
   }
 
-  // Returns the weights of four consecutive edges starting at e, given the flows x on them.
-  Vec4d getEdgeWeights(const int e, const Vec4d& x) const {
-    return travelCostFunction(e, x);
+  // Returns the weight of edge e, given the flow x on e.
+  double secondDerivative(const int e, const double x) const {
+    return travelCostFunction.derivative(e, x);
   }
 
  private:

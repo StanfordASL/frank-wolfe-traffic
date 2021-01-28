@@ -22,14 +22,14 @@ class SystemOptimum {
     return sum;
   }
 
-  // Returns the weight of edge e, given the flow x on e.
-  double getEdgeWeight(const int e, const double x) const {
+  // Returns the weight of edge e, given the flow x on e. AKA derivative
+  double derivative(const int e, const double x) const {
     return travelCostFunction(e, x) + x * travelCostFunction.derivative(e, x);
   }
-
-  // Returns the weights of four consecutive edges starting at e, given the flows x on them.
-  Vec4d getEdgeWeights(const int e, const Vec4d& x) const {
-    return travelCostFunction(e, x) + x * travelCostFunction.derivative(e, x);
+	
+  // Returns the second order partial derivative with respect to the e-th variable x_e at x_e = x.
+  double secondDerivative(const int e, const double x) const {
+    return 2 * travelCostFunction.derivative(e, x) + x * travelCostFunction.secondDerivative(e, x);
   }
 
  private:
