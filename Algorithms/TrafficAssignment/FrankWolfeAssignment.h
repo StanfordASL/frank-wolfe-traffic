@@ -61,19 +61,9 @@ public:
 		// Initialization.
 		Timer timer;
 
-		// Assign travel cost to empty graph (i.e., no traffic) 
-#ifdef TA_NO_SIMD_LINE_SEARCH // Kiril: Defining TA_NO_SIMD_LINE_SEARCH can remove parallelization
 		FORALL_EDGES(inputGraph, e)
 			inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, 0);
-#else
-		FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
-			const Vec4i weight = truncate_to_int(objFunction.getEdgeWeights(e, 0));
-			if (inputGraph.numEdges() - e >= Vec4d::size())
-				weight.store(&inputGraph.travelCost(e));
-			else
-				weight.store_partial(inputGraph.numEdges() - e, &inputGraph.travelCost(e));
-		}
-#endif
+
 		const int interval = !samplingIntervals.empty() ? samplingIntervals[0] : 1;
 
 		// Run all-or-nothing assignemnt
@@ -81,26 +71,11 @@ public:
 		paths = allOrNothingAssignment.getPaths();
 
 		// Update flow on edges based on the first AoN assignment
-#ifdef TA_NO_SIMD_LINE_SEARCH
 		FORALL_EDGES(inputGraph, e) {
 			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
 			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
 		}
-#else
-		Vec4d totalCost = 0;
-		FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
-			const Vec4d flow = to_double(Vec4i().load(&allOrNothingAssignment.trafficFlowOn(e)));
-			Vec4d cost = flow * travelCostFunction(e, flow);
-			if (inputGraph.numEdges() - e >= Vec4d::size()) {
-				flow.store(&trafficFlows[e]);
-			} else {
-				flow.store_partial(inputGraph.numEdges() - e, &trafficFlows[e]);
-				cost.cutoff(inputGraph.numEdges() - e);
-			}
-			totalCost += cost;
-		}
-		stats.totalTravelCost = horizontal_add(totalCost);
-#endif
+
 		stats.lastRunningTime = timer.elapsed();
 		stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
 		stats.objFunctionValue = objFunction(trafficFlows);
@@ -149,20 +124,8 @@ public:
 			Timer timer;
 
 			// Update travel costs
-#ifdef TA_NO_SIMD_LINE_SEARCH
 			FORALL_EDGES(inputGraph, e)
 				inputGraph.travelCost(e) = objFunction.getEdgeWeight(e, trafficFlows[e]);
-#else
-			FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
-				const Vec4d flow = Vec4d().load(&trafficFlows[e]);
-				const Vec4i weight = truncate_to_int(objFunction.getEdgeWeights(e, flow));
-
-				if (inputGraph.numEdges() - e >= Vec4d::size())
-					weight.store(&inputGraph.travelCost(e));
-				else
-					weight.store_partial(inputGraph.numEdges() - e, &inputGraph.travelCost(e));
-			}
-#endif
 
 			// Direction finding.
 			const int interval = substats.numIterations < samplingIntervals.size() ?  samplingIntervals[substats.numIterations] : 1;
@@ -171,59 +134,20 @@ public:
 
 			// Line search.
 			const double alpha = bisectionMethod([this](const double alpha) {
-#ifdef TA_NO_SIMD_LINE_SEARCH
 													 long double sum = 0;
 													 FORALL_EDGES(inputGraph, e) {
 														 const long double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
 														 sum += direction * objFunction.getEdgeWeight(e, trafficFlows[e] + alpha * direction);
 													 }
 													 return sum;
-#else
-													 long double sum = 0;
-													 FORALL_EDGES(inputGraph, e) {
-														 const long double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
-														 sum += direction * objFunction.getEdgeWeight(e, trafficFlows[e] + alpha * direction);
-													 }
-													 return sum;
-													 /*
-													 Vec4d sum = 0;
-													 FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
-														 const Vec4d oldFlow = Vec4d().load(&trafficFlows[e]);
-														 const Vec4d newFlow = to_double(Vec4i().load(&allOrNothingAssignment.trafficFlowOn(e)));
-														 const Vec4d direction = newFlow - oldFlow;
-														 Vec4d tmp = direction * objFunction.getEdgeWeights(e, oldFlow + alpha * direction);
-														 if (inputGraph.numEdges() - e < Vec4d::size())
-															 tmp.cutoff(inputGraph.numEdges() - e);
-														 sum += tmp;
-													 }
-													 return horizontal_add(sum);*/
-#endif
 												 }, 0, 1);
 			
 			// Move along the descent direction.
-#ifdef TA_NO_SIMD_LINE_SEARCH
 			FORALL_EDGES(inputGraph, e) {
 				const double direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
 				trafficFlows[e] = trafficFlows[e] + alpha * direction;
 				stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
 			}
-#else
-			Vec4d totalCost = 0;
-			FORALL_EDGES_SIMD(inputGraph, e, Vec4d::size()) {
-				const Vec4d oldFlow = Vec4d().load(&trafficFlows[e]);
-				const Vec4d auxFlow = to_double(Vec4i().load(&allOrNothingAssignment.trafficFlowOn(e)));
-				const Vec4d newFlow = oldFlow + alpha * (auxFlow - oldFlow);
-				Vec4d cost = newFlow * travelCostFunction(e, newFlow);
-				if (inputGraph.numEdges() - e >= Vec4d::size()) {
-					newFlow.store(&trafficFlows[e]);
-				} else {
-					newFlow.store_partial(inputGraph.numEdges() - e, &trafficFlows[e]);
-					cost.cutoff(inputGraph.numEdges() - e);
-				}
-				totalCost += cost;
-			}
-			stats.totalTravelCost = horizontal_add(totalCost);
-#endif
 
 			// update weights vector
 			for (auto i = 0; i < substats.numIterations - 1; i++)
@@ -265,8 +189,6 @@ public:
 					pathFile << '\n';
 				}
 			}
-
-			
 			
 
 			if (verbose) {
@@ -308,6 +230,8 @@ public:
 			for (auto i = 0; i < weights.size(); i++)
 				weightFile << i+1 << ',' << weights[i] << '\n';
 	}
+
+	
 
 	// Returns the traffic flow on edge e.
 	const double& trafficFlowOn(const int e) const {
