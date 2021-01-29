@@ -29,6 +29,15 @@ class ModifiedBprFunction {
       return bpr.derivative(e, pt);
   }
 
+	// Returns the derivative of e's travel cost function at x.
+  double secondDerivative(const int e, const double x) const {
+    const double pt = APT * graph.capacity(e); // The point at which we linearize.
+    if (x <= pt)
+      return bpr.secondDerivative(e, x);
+    else
+		return 0;
+  }
+
   // Returns the integral of e's travel cost function from 0 to b.
   double integral(const int e, const double b) const {
     const double pt = APT * graph.capacity(e); // The point at which we linearize.
@@ -38,18 +47,6 @@ class ModifiedBprFunction {
       return bpr.integral(e, pt) + (b - pt) * (operator()(e, b) + operator()(e, pt)) / 2;
   }
 
-  // Returns the travel times on four consecutive edges starting at e, given the flows x on them.
-  Vec4d operator()(const int e, const Vec4d& x) const {
-    Vec4d pt = APT * to_double(Vec4i().load(&graph.capacity(e)));
-    return bpr(e, min(x, pt)) +
-        bpr.derivative(e, pt) * (max(x, pt) - pt);
-  }
-
-  // Returns the derivative of e's travel cost function at x.
-  Vec4d derivative(const int e, const Vec4d& x) const {
-    Vec4d pt =APT * to_double(Vec4i().load(&graph.capacity(e)));
-    return bpr.derivative(e, min(x, pt));
-  }
 
  private:
 	const GraphT& graph; // The graph on whose edges we operate.

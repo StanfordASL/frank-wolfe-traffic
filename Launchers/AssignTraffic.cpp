@@ -20,10 +20,10 @@
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/SystemOptimum.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
 /*#include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction.h"
   #include "Algorithms/TrafficAssignment/TravelCostFunctions/ApproxBprFunction.h"
   #include "Algorithms/TrafficAssignment/TravelCostFunctions/UnawareBprFunction.h"
-  #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
   #include "Algorithms/TrafficAssignment/TravelCostFunctions/DavidsonFunction.h"
   #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedDavidsonFunction.h"*/
 #include "Algorithms/TrafficAssignment/FrankWolfeAssignment.h"
@@ -318,12 +318,12 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
 // Picks the travel cost function according to the command line options.
 template <template <typename> class ObjFunctionT>
 void chooseTravelCostFunction(const CommandLineParser& clp) {
-	const std::string func = clp.getValue<std::string>("f", "custom_bpr");
+	const std::string func = clp.getValue<std::string>("f", "modified_bpr");
 	if (func == "bpr")
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
-	/*else if (func == "modified_bpr")
+	else if (func == "modified_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
-	  else if (func == "custom_bpr")
+	/*	  else if (func == "custom_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
 	  else if (func == "approx_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);

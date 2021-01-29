@@ -45,7 +45,7 @@ Once you installed the packages, simply type `scons` at the top-level directory 
 ```
 $ scons
 ```
-For Release or Debug modes use either `scons -Q variant-Release` or `scons -Q variant-Debug`.
+For Release or Debug modes use either `scons -Q variant=Release` or `scons -Q variant=Debug`.
 
 ### SCons Integration for Eclipse
 

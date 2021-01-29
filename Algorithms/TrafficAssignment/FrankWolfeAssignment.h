@@ -189,14 +189,14 @@ public:
 	}
 
 	void determineInitialSolution(const int interval) {
-		int iterations = 7;
+		//int iterations = 7;
 
 		FORALL_EDGES(graph, e)
 			graph.travelCost(e) = objFunction.derivative(e, 0);
 
 		allOrNothingAssignment.run(interval);
 
-		FORALL_EDGES(graph, e)
+		/*FORALL_EDGES(graph, e)
 			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
 
 		for (int i = 2; i <= iterations; i++){		
@@ -207,7 +207,7 @@ public:
 				
 			const auto tau = findMoveSize();
 			moveAlongDescentDirection(tau);		
-		} 
+			}  */
 
 		FORALL_EDGES(graph, e)
 		{
@@ -215,7 +215,7 @@ public:
 			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
 		}
 
-		allOrNothingAssignment.stats.numIterations = 1;
+		// allOrNothingAssignment.stats.numIterations = 1;
 	}
 
 	// Updates traversal costs.
