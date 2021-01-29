@@ -30,7 +30,7 @@ public:
 	using InputGraph = InputGraphT;
 
 	// Constructs an assignment procedure based on the Frank-Wolfe method.
-	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, const bool verbose = true)
+	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true)
 		: allOrNothingAssignment(graph, odPairs, verbose),
 		  graph(graph),	
 		  trafficFlows(graph.numEdges()),
@@ -41,6 +41,7 @@ public:
 		  distanceFile(distFile),
 		  patternFile(patternFile),
 		  pathFile(pathFile),
+		  weightFile(weightFile),
 		  verbose(verbose) {
 		stats.totalRunningTime = allOrNothingAssignment.stats.totalRoutingTime;
 	}
@@ -54,6 +55,9 @@ public:
 			assert(samplingIntervals[i - 1] % samplingIntervals[i] == 0);
 		}
 		const AllOrNothingAssignmentStats& substats = allOrNothingAssignment.stats;
+
+		std::vector<double> weights = std::vector<double>(numIterations, 0.0);
+		weights[0]=1.0;
 		
 		Timer timer;
 		const int interval = !samplingIntervals.empty() ? samplingIntervals[0] : 1;
@@ -78,20 +82,17 @@ public:
 				distanceFile << substats.numIterations << ',' << dist << '\n';
 
 		if (pathFile.is_open())
-		{
-			for (auto i = 0; i < paths.size(); i++)
 			{
-				pathFile << substats.numIterations << ',' << i;
-				for(const auto& e : paths[i])
+				for (auto i = 0; i < paths.size(); i++)
 				{
-					const int tail = graph.edgeTail_z(e);
-					const int head = graph.edgeHead(e);
-					pathFile << ",(" << tail << " " << head << ")";
-				}
+					pathFile << substats.numIterations << ',' << i;
+					for(const auto& e : paths[i])
+						pathFile << "," << e;
 
-				pathFile << '\n';
+					pathFile << '\n';
+				}
 			}
-		}
+		
 
 		if (verbose) {
 			std::cout << "  Line search: " << stats.lastLineSearchTime << "ms";
@@ -116,6 +117,12 @@ public:
 
 			const auto tau = findMoveSize();
 			moveAlongDescentDirection(tau);
+
+			// update weights vector
+			for (auto i = 0; i < substats.numIterations - 1; i++)
+				weights[i] = weights[i] * (1.0-tau);
+
+			weights[substats.numIterations-1] = tau;
 									
 			stats.lastRunningTime = timer.elapsed();
 			stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
@@ -141,12 +148,7 @@ public:
 				{
 					pathFile << substats.numIterations << ',' << i;
 					for(const auto& e : paths[i])
-					{
-						const int tail = graph.edgeTail_z(e);
-						const int head = graph.edgeHead(e);
-
-						pathFile << ",(" << tail << " " << head << ")";
-					}
+						pathFile << "," << e;
 
 					pathFile << '\n';
 				}
@@ -186,6 +188,11 @@ public:
 			
 				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << graph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << graph.capacity(e) << ',' << flow << '\n';
 			}
+
+		if (weightFile.is_open())
+			for (int i=0; i < numIterations; i++)
+				weightFile << i+1 << "," << weights[i] << std::endl;
+		
 	}
 
 	void determineInitialSolution(const int interval) {
@@ -237,7 +244,6 @@ public:
 		auto num = 0.0, den = 0.0;
 		FORALL_EDGES(graph, e) {
 			const auto residualDirection = pointOfSight[e] - trafficFlows[e];
-			//// KIRIL: stopped here! Figure out what is the second derivative
 			const auto secondDerivative = objFunction.secondDerivative(e, trafficFlows[e]);
 			const auto fwDirection = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
 			num += residualDirection * secondDerivative * fwDirection;
@@ -295,6 +301,7 @@ private:
 	std::ofstream& distanceFile;           // The output file containing the OD-distances.
 	std::ofstream& patternFile;            // The output file containing the flow patterns.
 	std::ofstream& pathFile;				// Output file for individual paths
+	std::ofstream& weightFile;				// Output file for path weights
 	const bool verbose;                    // Should informative messages be displayed?
 	std::vector<std::list<int>> paths;	// paths of the individual od pairs
 };

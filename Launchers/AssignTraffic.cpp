@@ -8,6 +8,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <bits/stdc++.h> 
+#include <iostream> 
+#include <sys/stat.h> 
+#include <sys/types.h> 
 
 #include <boost/dynamic_bitset.hpp>
 #include <routingkit/customizable_contraction_hierarchy.h>
@@ -61,10 +65,7 @@ void printUsage() {
 		"  -si <intervals>   a blank-separated list of sampling intervals\n"
 		"  -i <path>         the input graph in binary format\n"
 		"  -od <file>        the OD-pairs to be assigned\n"
-		"  -o <file>         the output CSV file without file extension\n"
-		"  -dist <file>      output the OD-distances after each iteration in <file>\n"
-		"  -fp <file>        output the flow pattern after each iteration in <file>\n"
-		"  -paths <file>     output the od-paths after each iteration in <file>\n"
+		"  -o <path>         output path\n"
 		"  -help             display this help and exit\n";  
 }
 
@@ -168,10 +169,12 @@ template <typename FrankWolfeAssignmentT>
 void assignTraffic(const CommandLineParser& clp) {
 	const std::string infilename = clp.getValue<std::string>("i");
 	const std::string odFilename = clp.getValue<std::string>("od");
-	const std::string csvFilename = clp.getValue<std::string>("o");
+	const std::string outputPath = clp.getValue<std::string>("o");
+	//const std::string csvFilename = clp.getValue<std::string>("o");
 	const std::string distanceFilename = clp.getValue<std::string>("dist");
-	const std::string patternFilename = clp.getValue<std::string>("fp");
+	/*const std::string patternFilename = clp.getValue<std::string>("fp");
 	const std::string pathFilename = clp.getValue<std::string>("paths");
+	const std::string weightFilename = clp.getValue<std::string>("weights");*/
 	const std::string ord = clp.getValue<std::string>("ord", "input");
 	const int maxDiam = clp.getValue<int>("U", 40);
 	const double period = clp.getValue<double>("p", 1);
@@ -184,6 +187,27 @@ void assignTraffic(const CommandLineParser& clp) {
 	typename FrankWolfeAssignmentT::InputGraph graph(in, dummy_id, exogenous);
 	in.close();
 
+	if (mkdir(&outputPath[0],0777) != 0)
+		std::cout << "Could not create output folder\n";
+	
+
+	// create destination folder if not exists
+	/*boost::filesystem::path dir(outputPath);
+
+    if(!(boost::filesystem::exists(dir))){
+        std::cout<<"Doesn't Exists"<<std::endl;
+
+        if (boost::filesystem::create_directory(dir))
+            std::cout << "....Successfully Created !" << std::endl;
+			}*/
+
+	//std::experimental::filesystem::create_directories(outputPath);
+	
+	const std::string patternFilename = outputPath + "/flow";
+	const std::string pathFilename = outputPath + "/paths";
+	const std::string weightFilename = outputPath + "/weights";
+	const std::string csvFilename = outputPath + "/output";
+	
 	int id = 0;
 	FORALL_EDGES(graph, e) {
 		graph.capacity(e) = std::max(std::round(period * graph.capacity(e)), 1.0);
@@ -272,7 +296,17 @@ void assignTraffic(const CommandLineParser& clp) {
 		pathFile << "numIteration,odPair,edges\n";
 	}
 
-	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, pathFile, clp.isSet("v"));
+	std::ofstream weightFile;
+	if (!weightFilename.empty()) {
+		weightFile.open(weightFilename + ".csv");
+		if (!weightFile.good())
+			throw std::invalid_argument("file cannot be opened -- '" + weightFilename + ".csv'");
+		if (!csvFilename.empty())
+			weightFile << "# Main file: " << csvFilename << ".csv\n";
+		weightFile << "numIteration,weight\n";
+	}
+
+	FrankWolfeAssignmentT assign(graph, odPairs, csv, distanceFile, patternFile, pathFile, weightFile, clp.isSet("v"));
 
 	if (csv.is_open()) {
 		csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";
