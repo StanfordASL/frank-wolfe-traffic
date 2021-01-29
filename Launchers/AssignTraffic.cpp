@@ -21,11 +21,11 @@
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
 /*#include "Algorithms/TrafficAssignment/TravelCostFunctions/CustomBprFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/ApproxBprFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/UnawareBprFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/DavidsonFunction.h"
-#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedDavidsonFunction.h"*/
+  #include "Algorithms/TrafficAssignment/TravelCostFunctions/ApproxBprFunction.h"
+  #include "Algorithms/TrafficAssignment/TravelCostFunctions/UnawareBprFunction.h"
+  #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
+  #include "Algorithms/TrafficAssignment/TravelCostFunctions/DavidsonFunction.h"
+  #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedDavidsonFunction.h"*/
 #include "Algorithms/TrafficAssignment/FrankWolfeAssignment.h"
 #include "DataStructures/Graph/Attributes/CapacityAttribute.h"
 #include "DataStructures/Graph/Attributes/EdgeIdAttribute.h"
@@ -322,19 +322,19 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
 	if (func == "bpr")
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
 	/*else if (func == "modified_bpr")
-		chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
-	else if (func == "custom_bpr")
-		chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
-	else if (func == "approx_bpr")
-		chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);
-	else if (func == "unaware_bpr")
-		chooseShortestPathAlgo<ObjFunctionT, UnawareBprFunction>(clp);
-	else if (func == "davidson")
-		chooseShortestPathAlgo<ObjFunctionT, DavidsonFunction>(clp);
-	else if (func == "modified_davidson")
-		chooseShortestPathAlgo<ObjFunctionT, ModifiedDavidsonFunction>(clp);
-	else if (func == "inverse")
-	chooseShortestPathAlgo<ObjFunctionT, InverseFunction>(clp);*/
+	  chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
+	  else if (func == "custom_bpr")
+	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
+	  else if (func == "approx_bpr")
+	  chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);
+	  else if (func == "unaware_bpr")
+	  chooseShortestPathAlgo<ObjFunctionT, UnawareBprFunction>(clp);
+	  else if (func == "davidson")
+	  chooseShortestPathAlgo<ObjFunctionT, DavidsonFunction>(clp);
+	  else if (func == "modified_davidson")
+	  chooseShortestPathAlgo<ObjFunctionT, ModifiedDavidsonFunction>(clp);
+	  else if (func == "inverse")
+	  chooseShortestPathAlgo<ObjFunctionT, InverseFunction>(clp);*/
 	else
 		throw std::invalid_argument("unrecognized travel cost function -- '" + func + "'");
 }

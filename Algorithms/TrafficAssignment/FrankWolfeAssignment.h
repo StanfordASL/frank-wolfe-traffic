@@ -55,12 +55,8 @@ public:
 		}
 		const AllOrNothingAssignmentStats& substats = allOrNothingAssignment.stats;
 		
-		// Initialization.
 		Timer timer;
-
-		// Run first  all-or-nothing assignemnt
 		const int interval = !samplingIntervals.empty() ? samplingIntervals[0] : 1;
-		
 		determineInitialSolution(interval);
 		paths = allOrNothingAssignment.getPaths();
 
@@ -181,7 +177,7 @@ public:
 			std::cout << std::flush;
 		}
 
-		if (patternFile.is_open()) // KIRIL: this is where the flow data is output
+		if (patternFile.is_open()) 
 			FORALL_EDGES(graph, e)
 			{			
 				const int tail = graph.edgeTail_z(e);
@@ -193,73 +189,88 @@ public:
 	}
 
 	void determineInitialSolution(const int interval) {
+		int iterations = 7;
+
 		FORALL_EDGES(graph, e)
 			graph.travelCost(e) = objFunction.derivative(e, 0);
-		
+
 		allOrNothingAssignment.run(interval);
+
+		FORALL_EDGES(graph, e)
+			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
+
+		for (int i = 2; i <= iterations; i++){		
+			FORALL_EDGES(graph, e) 
+				graph.travelCost(e) = objFunction.derivative(e, trafficFlows[e]);
+
+			findDescentDirection(interval);
+				
+			const auto tau = findMoveSize();
+			moveAlongDescentDirection(tau);		
+		} 
 
 		FORALL_EDGES(graph, e)
 		{
 			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
 			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
 		}
+
+		allOrNothingAssignment.stats.numIterations = 1;
 	}
 
-	 // Updates traversal costs.
-  void updateTravelCosts() {
-    FORALL_EDGES(graph, e) 
-		graph.travelCost(e) = objFunction.derivative(e, trafficFlows[e]);
-  }
+	// Updates traversal costs.
+	void updateTravelCosts() {
+		FORALL_EDGES(graph, e) 
+			graph.travelCost(e) = objFunction.derivative(e, trafficFlows[e]);
+	}
 
 	// Finds the descent direction.
-  void findDescentDirection(const int skipInterval) {
-    allOrNothingAssignment.run(skipInterval);
+	void findDescentDirection(const int skipInterval) {
+		allOrNothingAssignment.run(skipInterval);
 
-    if (allOrNothingAssignment.stats.numIterations == 2) {
-      FORALL_EDGES(graph, e)
-        pointOfSight[e] = allOrNothingAssignment.trafficFlowOn(e);
-      return;
-    }
+		if (allOrNothingAssignment.stats.numIterations == 2) {
+			FORALL_EDGES(graph, e)
+				pointOfSight[e] = allOrNothingAssignment.trafficFlowOn(e);
+			return;
+		}
 
-    auto num = 0.0, den = 0.0;
-    FORALL_EDGES(graph, e) {
-      const auto residualDirection = pointOfSight[e] - trafficFlows[e];
-	  //// KIRIL: stopped here! Figure out what is the second derivative
-      const auto secondDerivative = objFunction.secondDerivative(e, trafficFlows[e]);
-      const auto fwDirection = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
-      num += residualDirection * secondDerivative * fwDirection;
-      den += residualDirection * secondDerivative * (fwDirection - residualDirection);
-    }
+		auto num = 0.0, den = 0.0;
+		FORALL_EDGES(graph, e) {
+			const auto residualDirection = pointOfSight[e] - trafficFlows[e];
+			//// KIRIL: stopped here! Figure out what is the second derivative
+			const auto secondDerivative = objFunction.secondDerivative(e, trafficFlows[e]);
+			const auto fwDirection = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
+			num += residualDirection * secondDerivative * fwDirection;
+			den += residualDirection * secondDerivative * (fwDirection - residualDirection);
+		}
 
-    const auto alpha = std::min(std::max(0.0, num / den), 1 - 1e-15);
+		const auto alpha = std::min(std::max(0.0, num / den), 1 - 1e-15);
     
-    FORALL_EDGES(graph, e)
-      pointOfSight[e] = alpha * pointOfSight[e] + (1 - alpha) * allOrNothingAssignment.trafficFlowOn(e);
-  }
+		FORALL_EDGES(graph, e)
+			pointOfSight[e] = alpha * pointOfSight[e] + (1 - alpha) * allOrNothingAssignment.trafficFlowOn(e);
+	}
 
 	// Find the optimal move size.
-  double findMoveSize() const {
-    return bisectionMethod([this](const double tau) {
-      auto sum = 0.0;
-      FORALL_EDGES(graph, e) {
-        const auto direction = pointOfSight[e] - trafficFlows[e];
-        sum += direction * objFunction.derivative(e, trafficFlows[e] + tau * direction);
-      }
-      return sum;
-    }, 0, 1);
-  }
-
-	  // Moves along the descent direction.
-  void moveAlongDescentDirection(const double tau) {
-    FORALL_EDGES(graph, e)
-	{
-      trafficFlows[e] += tau * (pointOfSight[e] - trafficFlows[e]);
-	  stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
+	double findMoveSize() const {
+		return bisectionMethod([this](const double tau) {
+								   auto sum = 0.0;
+								   FORALL_EDGES(graph, e) {
+									   const auto direction = pointOfSight[e] - trafficFlows[e];
+									   sum += direction * objFunction.derivative(e, trafficFlows[e] + tau * direction);
+								   }
+								   return sum;
+							   }, 0, 1);
 	}
-  }
 
+	// Moves along the descent direction.
+	void moveAlongDescentDirection(const double tau) {
+		FORALL_EDGES(graph, e)
+		{
+			trafficFlows[e] += tau * (pointOfSight[e] - trafficFlows[e]);
+			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
+		}  
+	}
 	
-
 	// Returns the traffic flow on edge e.
 	const double& trafficFlowOn(const int e) const {
 		assert(e >= 0); assert(e < graph.numEdges());
@@ -293,11 +304,11 @@ template <
     template <typename> class TravelCostFunctionT,
     template <typename, typename> class ShortestPathAlgoT, typename InputGraphT>
 using UEAssignment =
-																  FrankWolfeAssignment<UserEquilibrium, TravelCostFunctionT, ShortestPathAlgoT, InputGraphT>;
+								 FrankWolfeAssignment<UserEquilibrium, TravelCostFunctionT, ShortestPathAlgoT, InputGraphT>;
 
 // An alias template for a system-optimum (SO) traffic assignment.
 template <
     template <typename> class TravelCostFunctionT,
     template <typename, typename> class ShortestPathAlgoT, typename InputGraphT>
 using SOAssignment =
-																  FrankWolfeAssignment<SystemOptimum, TravelCostFunctionT, ShortestPathAlgoT, InputGraphT>;
+								 FrankWolfeAssignment<SystemOptimum, TravelCostFunctionT, ShortestPathAlgoT, InputGraphT>;
