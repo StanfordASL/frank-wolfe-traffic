@@ -15,7 +15,7 @@ class SystemOptimum {
   SystemOptimum(TravelCostFunctionT function) : travelCostFunction(function) {}
 
   // Returns the value of the objective function for the specified edge flows.
-  double operator()(const AlignedVector<double>& flows) const {
+  double operator()(const std::vector<double>& flows) const {
     double sum = 0;
     for (int e = 0; e < flows.size(); ++e)
       sum += flows[e] * travelCostFunction(e, flows[e]);

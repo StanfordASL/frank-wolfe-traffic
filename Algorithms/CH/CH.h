@@ -112,14 +112,6 @@ class CH {
     ranks.readFrom(in);
   }
 
-  // Writes the CH to the specified binary file.
-  void writeTo(std::ofstream& out) const {
-    upGraph.writeTo(out);
-    downGraph.writeTo(out);
-    order.writeTo(out);
-    ranks.writeTo(out);
-  }
-
  private:
   SearchGraph upGraph;   // The upward graph.
   SearchGraph downGraph; // The downward graph.

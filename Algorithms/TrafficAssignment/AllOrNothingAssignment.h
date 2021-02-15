@@ -10,9 +10,9 @@
 #include <ostream>
 #include <vector>
 
+#include "DataStructures/Graph/Graph.h"
 #include "DataStructures/Utilities/OriginDestination.h"
 #include "Stats/TrafficAssignment/AllOrNothingAssignmentStats.h"
-#include "Tools/CommandLine/ProgressBar.h"
 #include "Tools/Simd/AlignedVector.h"
 #include "Tools/Timer.h"
 
@@ -22,12 +22,9 @@
 // procedure can be used with different shortest-path algorithms.
 template <typename ShortestPathAlgoT>
 class AllOrNothingAssignment {
-private:
-	using InputGraph = typename ShortestPathAlgoT::InputGraph;
-
 public:
 	// Constructs an all-or-nothing assignment instance.
-	AllOrNothingAssignment(const InputGraph& graph,
+	AllOrNothingAssignment(Graph& graph,
 						   const std::vector<ClusteredOriginDestination>& odPairs,
 						   const bool verbose = true)
 		: stats(odPairs.size()),
@@ -35,19 +32,19 @@ public:
 		  inputGraph(graph),
 		  odPairs(odPairs),
 		  verbose(verbose)
-	{
-		Timer timer;
-		shortestPathAlgo.preprocess();
-		stats.totalPreprocessingTime = timer.elapsed();
-		stats.lastRoutingTime = stats.totalPreprocessingTime;
-		stats.totalRoutingTime = stats.totalPreprocessingTime;
-		if (verbose) std::cout << "  Prepro: " << stats.totalPreprocessingTime << "ms" << std::endl;
-		paths = std::vector<std::list<int>>(odPairs.size(), std::list<int>());
+		{
+			Timer timer;
+			shortestPathAlgo.preprocess();
+			stats.totalPreprocessingTime = timer.elapsed();
+			stats.lastRoutingTime = stats.totalPreprocessingTime;
+			stats.totalRoutingTime = stats.totalPreprocessingTime;
+			if (verbose) std::cout << "  Prepro: " << stats.totalPreprocessingTime << "ms" << std::endl;
+			paths = std::vector<std::list<int>>(odPairs.size(), std::list<int>());
 		
-	}
+		}
 
 	// Assigns all OD-flows to their currently shortest paths.
-	void run(const int samplingInterval = 1) {
+	void run() {
 		Timer timer;
 		++stats.numIterations;
 		if (verbose) std::cout << "Iteration " << stats.numIterations << ": " << std::flush;
@@ -56,77 +53,20 @@ public:
 		stats.lastCustomizationTime = timer.elapsed();
 
 		timer.restart();
-		ProgressBar bar(std::ceil(1.0 * odPairs.size() / (K * samplingInterval)), verbose);
 
 		// assign initial flow of 0 to each edge
 		trafficFlows.assign(inputGraph.numEdges(), 0);
 		stats.startIteration();
-		int totalNumPairsSampledBefore = 0;
-	
-#pragma omp parallel
+
+		// find shortest path between each OD pair and collect flows
+		for (int i = 0; i < odPairs.size(); i++)
 		{
-			auto queryAlgo = shortestPathAlgo.getQueryAlgoInstance();
-			int64_t checksum = 0;
-			double avgChange = 0;
-			double maxChange = 0;
-			int numPairsSampledBefore = 0;
-
-			// find shortest path between each OD pair
-#pragma omp for schedule(dynamic, 64) nowait
-			for (int i = 0; i < odPairs.size(); i += K * samplingInterval) {
-				// Run multiple shortest-path computations simultaneously.
-				std::array<int, K> sources;
-				std::array<int, K> targets;
-				std::array<int, K> volumes;
-				std::array<std::list<int>, K> paths_local;
-				
-				// Kiril: prob. need to add another array of "weight" 
-				sources.fill(odPairs[i].origin);
-				targets.fill(odPairs[i].destination);
-				volumes.fill(odPairs[i].volume);
-				
-				int k = 1;
-				for (; k < K && i + k * samplingInterval < odPairs.size(); ++k) {
-					sources[k] = odPairs[i + k * samplingInterval].origin;
-					targets[k] = odPairs[i + k * samplingInterval].destination;
-					volumes[k] = odPairs[i + k * samplingInterval].volume;
-				}
-				queryAlgo.run(sources, targets, volumes, paths_local, k);
-
-				for (int j = 0; j < k; ++j) {
-					// Maintain the avg and max change in the OD-distances between the last two iterations.
-					const int dst = odPairs[i + j * samplingInterval].destination;
-					const int dist = queryAlgo.getDistance(dst, j);
-					const int prevDist = stats.lastDistances[i + j * samplingInterval];
-					const double change = 1.0 * std::abs(dist - prevDist) / prevDist;
-					numPairsSampledBefore += prevDist != -1;
-					checksum += dist;
-					stats.lastDistances[i + j * samplingInterval] = dist;
-					avgChange += std::max(0.0, change);
-					maxChange = std::max(maxChange, change);
-
-					paths[i + j * samplingInterval] = paths_local[j];
-				}
-				++bar;
-			}
-
-#pragma omp critical (combineResults)
-			{
-				queryAlgo.addLocalToGlobalFlows();
-				stats.lastChecksum += checksum;
-				stats.avgChangeInDistances += avgChange;
-				stats.maxChangeInDistances = std::max(stats.maxChangeInDistances, maxChange);
-				totalNumPairsSampledBefore += numPairsSampledBefore;
-			}
+			shortestPathAlgo.run(odPairs[i].origin, odPairs[i].destination, paths[i]);
+			for(const auto& e : paths[i])
+				trafficFlows[e] += odPairs[i].volume;
 		}
-	
-		bar.finish();
-
-		// Kiril: need to update the following function
-		shortestPathAlgo.propagateFlowsToInputEdges(trafficFlows);
-		std::for_each(trafficFlows.begin(), trafficFlows.end(), [&](int& f) { f *= samplingInterval; });
+		
 		stats.lastQueryTime = timer.elapsed();
-		stats.avgChangeInDistances /= totalNumPairsSampledBefore;
 		stats.finishIteration();
 
 		if (verbose) {
@@ -140,29 +80,26 @@ public:
 	}
 
 	// Returns the traffic flow on edge e.
-	const int& trafficFlowOn(const int e) const {
+	double trafficFlowOn(const int e) const {
 		assert(e >= 0); assert(e < inputGraph.numEdges());
-		return trafficFlows[e];
+		return (double)trafficFlows[e];
 	}
 
 	std::vector<std::list<int>>& getPaths()
-		{
-			return paths;
-		}
+	{
+		return paths;
+	}
 
 	AllOrNothingAssignmentStats stats; // Statistics about the execution.
 
 private:
-	// The maximum number of simultaneous shortest-path computations.
-	static constexpr int K = ShortestPathAlgoT::K;
-
 	using ODPairs = std::vector<ClusteredOriginDestination>;
 
 	ShortestPathAlgoT shortestPathAlgo; // Algo computing shortest paths between OD-pairs.
-	const InputGraph& inputGraph;       // The input graph.
+	Graph& inputGraph;					// The input graph.
 	const ODPairs& odPairs;             // The OD-pairs to be assigned onto the graph.
-	AlignedVector<int> trafficFlows;    // The traffic flows on the edges.
-	std::vector<std::list<int>> paths; // paths of the individual od pairs
+	std::vector<int> trafficFlows;			// The traffic flows on the edges.
+	std::vector<std::list<int>> paths;	// paths of the individual od pairs
 	const bool verbose;                 // Should informative messages be displayed?
 	
 };

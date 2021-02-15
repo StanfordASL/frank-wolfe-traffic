@@ -11,26 +11,23 @@
 
 #include "Algorithms/TrafficAssignment/AllOrNothingAssignment.h"
 #include "Algorithms/TrafficAssignment/UnivariateMinimization.h"
-#include "DataStructures/Graph/Attributes/TravelCostAttribute.h"
 #include "DataStructures/Graph/Graph.h"
 #include "DataStructures/Utilities/OriginDestination.h"
-#include "Stats/TrafficAssignment/FrankWolfeAssignmentStats.h"
-#include "Tools/Simd/AlignedVector.h"
 #include "Tools/Timer.h"
+#include "Stats/TrafficAssignment/FrankWolfeAssignmentStats.h"
 
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
 // compute the user equilibrium or system optimum, and to use different travel cost functions and
 // shortest-path algorithms.
 template <
-    template <typename> class ObjFunctionT, template <typename> class TravelCostFunctionT,
-    template <typename, typename> class ShortestPathAlgoT, typename InputGraphT>
+    template <typename> class ObjFunctionT, typename TravelCostFunction,
+    typename ShortestPathAlgoT>
 class FrankWolfeAssignment {
 public:
-	using InputGraph = InputGraphT;
 
 	// Constructs an assignment procedure based on the Frank-Wolfe method.
-	FrankWolfeAssignment(InputGraphT& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& distFile, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true)
+	FrankWolfeAssignment(Graph& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true)
 		: allOrNothingAssignment(graph, odPairs, verbose),
 		  graph(graph),	
 		  trafficFlows(graph.numEdges()),
@@ -38,7 +35,6 @@ public:
 		  travelCostFunction(graph),
 		  objFunction(travelCostFunction),
 		  csv(csv),
-		  distanceFile(distFile),
 		  patternFile(patternFile),
 		  pathFile(pathFile),
 		  weightFile(weightFile),
@@ -47,21 +43,15 @@ public:
 	}
 
 	// Assigns all OD-flows onto the input graph.
-	void run(const int numIterations = 0, const std::vector<int>& samplingIntervals = {}) {
+	void run(const int numIterations = 0) {
 		assert(numIterations >= 0);
-		assert(samplingIntervals.empty() || samplingIntervals[0] > 0);
-		for (int i = 1; i < samplingIntervals.size(); ++i) {
-			assert(samplingIntervals[i] > 0);
-			assert(samplingIntervals[i - 1] % samplingIntervals[i] == 0);
-		}
 		const AllOrNothingAssignmentStats& substats = allOrNothingAssignment.stats;
 
 		std::vector<double> weights = std::vector<double>(numIterations, 0.0);
 		weights[0]=1.0;
 		
 		Timer timer;
-		const int interval = !samplingIntervals.empty() ? samplingIntervals[0] : 1;
-		determineInitialSolution(interval);
+		determineInitialSolution();
 		paths = allOrNothingAssignment.getPaths();
 
 		stats.lastRunningTime = timer.elapsed();
@@ -70,17 +60,12 @@ public:
 		stats.finishIteration();
 
 		if (csv.is_open()) {
-			csv << substats.numIterations << "," << interval << ",";
 			csv << substats.lastCustomizationTime << "," << substats.lastQueryTime << ",";
 			csv << stats.lastLineSearchTime << "," << stats.lastRunningTime << ",nan,nan,";
 			csv << stats.objFunctionValue << "," << stats.totalTravelCost << ",";
 			csv << substats.lastChecksum << std::endl;
 		}
-
-		if (distanceFile.is_open())
-			for (const auto dist : substats.lastDistances)
-				distanceFile << substats.numIterations << ',' << dist << '\n';
-
+		
 		if (pathFile.is_open())
 			{
 				for (auto i = 0; i < paths.size(); i++)
@@ -111,8 +96,7 @@ public:
 			updateTravelCosts();
 
 			// Direction finding.
-			const int interval = substats.numIterations < samplingIntervals.size() ?  samplingIntervals[substats.numIterations] : 1;
-			findDescentDirection(interval);
+			findDescentDirection();
 			paths = allOrNothingAssignment.getPaths();
 
 			const auto tau = findMoveSize();
@@ -127,20 +111,16 @@ public:
 			stats.lastRunningTime = timer.elapsed();
 			stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
 			stats.objFunctionValue = objFunction(trafficFlows);
+			std::cout << stats.objFunctionValue << std::endl;
 			stats.finishIteration();
 
 			if (csv.is_open()) {
-				csv << substats.numIterations << "," << interval << ",";
 				csv << substats.lastCustomizationTime << "," << substats.lastQueryTime << ",";
 				csv << stats.lastLineSearchTime << "," << stats.lastRunningTime << ",";
 				csv << substats.avgChangeInDistances << "," << substats.maxChangeInDistances << ",";
 				csv << stats.objFunctionValue << "," << stats.totalTravelCost << ",";
 				csv << substats.lastChecksum << std::endl;
 			}
-
-			if (distanceFile.is_open())
-				for (const auto dist : substats.lastDistances)
-					distanceFile << substats.numIterations << ',' << dist << '\n';
 			
 			if (pathFile.is_open())
 			{
@@ -182,11 +162,11 @@ public:
 		if (patternFile.is_open()) 
 			FORALL_EDGES(graph, e)
 			{			
-				const int tail = graph.edgeTail_z(e);
-				const int head = graph.edgeHead(e);
+				const int tail = graph.tail(e);
+				const int head = graph.head(e);
 				const auto flow = trafficFlows[e];
 			
-				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << graph.travelTime(e) << ',' << travelCostFunction(e, flow) << ',' << graph.capacity(e) << ',' << flow << '\n';
+				patternFile << substats.numIterations << ',' << tail << ',' << head << ',' << graph.freeTravelTime(e) << ',' << travelCostFunction(e, flow) << ',' << graph.capacity(e) << ',' << flow << '\n';
 			}
 
 		if (weightFile.is_open())
@@ -195,27 +175,12 @@ public:
 		
 	}
 
-	void determineInitialSolution(const int interval) {
-		//int iterations = 7;
-
+	void determineInitialSolution() {
 		FORALL_EDGES(graph, e)
-			graph.travelCost(e) = objFunction.derivative(e, 0);
+			graph.setWeight(e, objFunction.derivative(e, 0));
 
-		allOrNothingAssignment.run(interval);
-
-		/*FORALL_EDGES(graph, e)
-			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
-
-		for (int i = 2; i <= iterations; i++){		
-			FORALL_EDGES(graph, e) 
-				graph.travelCost(e) = objFunction.derivative(e, trafficFlows[e]);
-
-			findDescentDirection(interval);
-				
-			const auto tau = findMoveSize();
-			moveAlongDescentDirection(tau);		
-			}  */
-
+		allOrNothingAssignment.run();
+		
 		FORALL_EDGES(graph, e)
 		{
 			trafficFlows[e] = allOrNothingAssignment.trafficFlowOn(e);
@@ -227,13 +192,13 @@ public:
 
 	// Updates traversal costs.
 	void updateTravelCosts() {
-		FORALL_EDGES(graph, e) 
-			graph.travelCost(e) = objFunction.derivative(e, trafficFlows[e]);
+		FORALL_EDGES(graph, e)
+			graph.setWeight(e, objFunction.derivative(e, trafficFlows[e]));
 	}
 
 	// Finds the descent direction.
-	void findDescentDirection(const int skipInterval) {
-		allOrNothingAssignment.run(skipInterval);
+	void findDescentDirection() {
+		allOrNothingAssignment.run();
 
 		if (allOrNothingAssignment.stats.numIterations == 2) {
 			FORALL_EDGES(graph, e)
@@ -286,19 +251,16 @@ public:
 	FrankWolfeAssignmentStats stats; // Statistics about the execution.
 
 private:
-	using AllOrNothing = AllOrNothingAssignment<ShortestPathAlgoT<InputGraphT, TravelCostAttribute>>;
-	using TravelCostFunction = TravelCostFunctionT<InputGraphT>;
+	using AllOrNothing = AllOrNothingAssignment<ShortestPathAlgoT>;
 	using ObjFunction = ObjFunctionT<TravelCostFunction>;
 
 	AllOrNothing allOrNothingAssignment;   // The all-or-nothing assignment algo used as a subroutine.
-	InputGraphT& graph;               // The input graph.
-	// InputGraphT graphReversed;        // Reversed input graph (needed to get edge tails)
-	AlignedVector<double> trafficFlows;    // The traffic flows on the edges.
+	Graph& graph;               // The input graph.
+	std::vector<double> trafficFlows;    // The traffic flows on the edges.
 	std::vector<double> pointOfSight;            // The point defining the descent direction d = s - x
 	TravelCostFunction travelCostFunction; // A functor returning the travel cost on an edge.
 	ObjFunction objFunction;               // The objective function to be minimized (UE or SO).
 	std::ofstream& csv;                    // The output CSV file containing statistics.
-	std::ofstream& distanceFile;           // The output file containing the OD-distances.
 	std::ofstream& patternFile;            // The output file containing the flow patterns.
 	std::ofstream& pathFile;				// Output file for individual paths
 	std::ofstream& weightFile;				// Output file for path weights
@@ -308,14 +270,12 @@ private:
 
 // An alias template for a user-equilibrium (UE) traffic assignment.
 template <
-    template <typename> class TravelCostFunctionT,
-    template <typename, typename> class ShortestPathAlgoT, typename InputGraphT>
-using UEAssignment =
-								 FrankWolfeAssignment<UserEquilibrium, TravelCostFunctionT, ShortestPathAlgoT, InputGraphT>;
+    typename TravelCostFunction,
+    typename ShortestPathAlgoT>
+using UEAssignment = FrankWolfeAssignment<UserEquilibrium, TravelCostFunction, ShortestPathAlgoT>;
 
 // An alias template for a system-optimum (SO) traffic assignment.
 template <
-    template <typename> class TravelCostFunctionT,
-    template <typename, typename> class ShortestPathAlgoT, typename InputGraphT>
-using SOAssignment =
-								 FrankWolfeAssignment<SystemOptimum, TravelCostFunctionT, ShortestPathAlgoT, InputGraphT>;
+    typename TravelCostFunction,
+    typename ShortestPathAlgoT>
+using SOAssignment = FrankWolfeAssignment<SystemOptimum, TravelCostFunction, ShortestPathAlgoT>;
