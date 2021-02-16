@@ -38,45 +38,22 @@ public:
 			path.push_front(lemonGraph.id(in_arc));
 		}
 
-		assert(!path.empty());		
+		assert(!path.empty()); // Either the graph is not connect, origin is equal to destination	
 	}
 
-	void preprocess()
-		{
-			std::vector<std::pair<int,int>> edges(graph.numEdges());
-			for (int e = 0; e < graph.numEdges(); ++e)
-				edges[e] = std::make_pair(graph.tail(e), graph.head(e));
+	void preprocess(){
+		std::vector<std::pair<int,int>> edges(graph.numEdges());
+		for (int e = 0; e < graph.numEdges(); ++e)
+			edges[e] = std::make_pair(graph.tail(e), graph.head(e));
 		
-			lemonGraph.build(graph.numVertices(), edges.begin(), edges.end());
-	
-			/*
-			  // weightMap = WeightMap(graph.getWeights(), lemonGraph);
-			// start and target nodes
-			Node s = g.node(0);
-			Node t = g.node(3);
-		
-			dij.run(s,t);
+		lemonGraph.build(graph.numVertices(), edges.begin(), edges.end());
+	}
 
-			// extract shortest path (in reverse order)
-			Node node = t;
-			while (node != s)
-			{
-			Arc in_arc =  dij.predMap()[c_n];
-			node = g.source(in_arc);
-		
-			cout << g.id(node) << endl;
-			}*/
-		}
-
-	void customize()
-		{
-			//dijkstra = Dijkstra<LemonGraph, WeightMap>(lemongGraph, weightMap);
-			//dijkstra.init();
-			//dijkstra = Dijkstra<LemonGraph, WeightMap>(lemonGraph, weightMap);
-			dijkstra.lengthMap(weightMap);
-			int currentSource = 0;
-			dijkstra.run(lemonGraph.node(currentSource));
-		}
+	void customize(){
+		dijkstra.lengthMap(weightMap);
+		currentSource = 0;
+		dijkstra.run(lemonGraph.node(currentSource));
+	}
 	
 private:
 	using LemonGraph = StaticDigraph;
@@ -111,45 +88,3 @@ private:
 	Dijkstra<LemonGraph, WeightMap> dijkstra; // Dijkstra search
 	int currentSource;
 };
-
-
-/*
-// LEMON DEMO CODE
-
-// TEST BEGIN
-std::vector<std::pair<int,int>> edges;
-edges.push_back(std::make_pair(0,1));
-edges.push_back(std::make_pair(0,2));
-edges.push_back(std::make_pair(1,2));	
-edges.push_back(std::make_pair(1,3));
-edges.push_back(std::make_pair(2,3));
-edges.push_back(std::make_pair(3,0));
-
-lemonGraph.clear();
-		
-lemonGraph.build(4, edges.begin(), edges.end());
-//WeightMap weightMap(graph.getWeights());
-ArcMap<double> length(lemonGraph, 1.0);
-length[lemonGraph.arc(1)] = 0.1;
-length[lemonGraph.arc(5)] = 8.0;
-length[lemonGraph.arc(2)] = 5.0;
-length[lemonGraph.arc(4)] = 0.1;
-
-Dijkstra<LemonGraph, ArcMap<double>> dijkstra(lemonGraph, length);
-
-// start and target nodes
-Node s = lemonGraph.node(0);
-Node t = lemonGraph.node(3);
-		
-dijkstra.run(s,t);
-
-// extract shortest path (in reverse order)
-Node node = t;
-while (node != s)
-{
-Arc in_arc =  dijkstra.predMap()[node];
-node = lemonGraph.source(in_arc);
-		
-std::cout << lemonGraph.id(node) << std::endl;
-}
-*/

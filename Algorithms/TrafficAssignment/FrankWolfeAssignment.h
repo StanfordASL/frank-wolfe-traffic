@@ -16,7 +16,7 @@
 #include "Tools/Timer.h"
 #include "Stats/TrafficAssignment/FrankWolfeAssignmentStats.h"
 
-#define TA_NO_CFW
+// #define TA_NO_CFW 
 
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
@@ -62,10 +62,9 @@ public:
 		stats.finishIteration();
 
 		if (csv.is_open()) {
-			csv << substats.lastCustomizationTime << "," << substats.lastQueryTime << ",";
-			csv << stats.lastLineSearchTime << "," << stats.lastRunningTime << ",nan,nan,";
-			csv << stats.objFunctionValue << "," << stats.totalTravelCost << ",";
-			csv << substats.lastChecksum << std::endl;
+			csv << substats.numIterations << "," << substats.lastCustomizationTime << "," << substats.lastQueryTime << ",";
+			csv << stats.lastLineSearchTime << "," << stats.lastRunningTime << ",";
+			csv << stats.objFunctionValue << "," << stats.totalTravelCost << "," << std::endl;
 		}
 		
 		if (pathFile.is_open())
@@ -91,6 +90,7 @@ public:
 
 		// Perform iterations of Frank-Wolfe		
 		do {
+			Timer timer;
 			stats.startIteration();
 
 			// Update travel costs
@@ -99,8 +99,6 @@ public:
 			// Direction finding.
 			findDescentDirection();
 			paths = allOrNothingAssignment.getPaths();
-
-			Timer timer;
 			
 			const auto tau = findMoveSize();
 			moveAlongDescentDirection(tau);
@@ -117,12 +115,10 @@ public:
 			stats.finishIteration();
 
 			if (csv.is_open()) {
-				csv << substats.lastCustomizationTime << "," << substats.lastQueryTime << ",";
+				csv << substats.numIterations << "," << substats.lastCustomizationTime << "," << substats.lastQueryTime << ",";
 				csv << stats.lastLineSearchTime << "," << stats.lastRunningTime << ",";
-				csv << substats.avgChangeInDistances << "," << substats.maxChangeInDistances << ",";
-				csv << stats.objFunctionValue << "," << stats.totalTravelCost << ",";
-				csv << substats.lastChecksum << std::endl;
-			}
+				csv << stats.objFunctionValue << "," << stats.totalTravelCost << "," << std::endl;
+			}	
 			
 			if (pathFile.is_open())
 			{
