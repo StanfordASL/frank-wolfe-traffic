@@ -123,8 +123,8 @@ private:
 			if (tail + 1 > vertexNum || head + 1 > vertexNum)
 				vertexNum = std::max(tail, head) + 1;
 
-			// compute free flow travel time in hours
-			double freeFlowTravelTime = ((double) length / 1000.0) / ((double) speed);
+			// compute free flow travel time in minutes
+			double freeFlowTravelTime = 60 * 60 * ((double) length / 1000.0) / ((double) speed);
 			edgeFreeTravelTime.push_back(freeFlowTravelTime);
 			edgeWeight.push_back(freeFlowTravelTime); // initial edge weight
 		}

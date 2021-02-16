@@ -48,7 +48,7 @@ public:
 		Timer timer;
 		++stats.numIterations;
 		if (verbose) std::cout << "Iteration " << stats.numIterations << ": " << std::flush;
-	
+
 		shortestPathAlgo.customize();
 		stats.lastCustomizationTime = timer.elapsed();
 

@@ -16,6 +16,8 @@
 #include "Tools/Timer.h"
 #include "Stats/TrafficAssignment/FrankWolfeAssignmentStats.h"
 
+#define TA_NO_CFW
+
 // A traffic assignment procedure based on the Frank-Wolfe method (also known as convex combinations
 // method). At its heart are iterative shortest-paths computations. The algo can be parameterized to
 // compute the user equilibrium or system optimum, and to use different travel cost functions and
@@ -90,7 +92,6 @@ public:
 		// Perform iterations of Frank-Wolfe		
 		do {
 			stats.startIteration();
-			Timer timer;
 
 			// Update travel costs
 			updateTravelCosts();
@@ -99,6 +100,8 @@ public:
 			findDescentDirection();
 			paths = allOrNothingAssignment.getPaths();
 
+			Timer timer;
+			
 			const auto tau = findMoveSize();
 			moveAlongDescentDirection(tau);
 
@@ -111,7 +114,6 @@ public:
 			stats.lastRunningTime = timer.elapsed();
 			stats.lastLineSearchTime = stats.lastRunningTime - substats.lastRoutingTime;
 			stats.objFunctionValue = objFunction(trafficFlows);
-			std::cout << stats.objFunctionValue << std::endl;
 			stats.finishIteration();
 
 			if (csv.is_open()) {
@@ -199,7 +201,7 @@ public:
 	// Finds the descent direction.
 	void findDescentDirection() {
 		allOrNothingAssignment.run();
-
+#ifndef TA_NO_CFW
 		if (allOrNothingAssignment.stats.numIterations == 2) {
 			FORALL_EDGES(graph, e)
 				pointOfSight[e] = allOrNothingAssignment.trafficFlowOn(e);
@@ -219,14 +221,19 @@ public:
     
 		FORALL_EDGES(graph, e)
 			pointOfSight[e] = alpha * pointOfSight[e] + (1 - alpha) * allOrNothingAssignment.trafficFlowOn(e);
+#endif
 	}
 
 	// Find the optimal move size.
 	double findMoveSize() const {
 		return bisectionMethod([this](const double tau) {
-								   auto sum = 0.0;
+								   double sum = 0.0;
 								   FORALL_EDGES(graph, e) {
+#ifndef TA_NO_CFW
 									   const auto direction = pointOfSight[e] - trafficFlows[e];
+#else
+									   const auto direction = allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e];
+#endif
 									   sum += direction * objFunction.derivative(e, trafficFlows[e] + tau * direction);
 								   }
 								   return sum;
@@ -237,7 +244,11 @@ public:
 	void moveAlongDescentDirection(const double tau) {
 		FORALL_EDGES(graph, e)
 		{
+#ifndef TA_NO_CFW			
 			trafficFlows[e] += tau * (pointOfSight[e] - trafficFlows[e]);
+#else
+			trafficFlows[e] += tau * (allOrNothingAssignment.trafficFlowOn(e) - trafficFlows[e]);
+#endif			
 			stats.totalTravelCost += trafficFlows[e] * travelCostFunction(e, trafficFlows[e]);
 		}  
 	}

@@ -15,8 +15,10 @@ class UserEquilibrium {
   // Returns the value of the objective function for the specified edge flows.
   double operator()(const std::vector<double>& flows) const {
     double sum = 0;
+	
     for (int e = 0; e < flows.size(); ++e)
-      sum += travelCostFunction.integral(e, flows[e]);
+		sum += travelCostFunction.integral(e, flows[e]);
+			
     return sum;
   }
 
