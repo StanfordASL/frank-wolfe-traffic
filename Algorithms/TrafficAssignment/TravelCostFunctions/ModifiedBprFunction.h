@@ -1,14 +1,12 @@
 #pragma once
 
-#include <vectorclass/vectorclass.h>
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
 
 // The BPR travel cost function, relating the travel time on an edge to the flow on this edge.
-template <typename GraphT>
 class ModifiedBprFunction {
  public:
   // Constructs a BPR function.
-	ModifiedBprFunction(const GraphT& graph) : graph(graph), bpr(graph) {
+	ModifiedBprFunction(const Graph& graph) : graph(graph), bpr(graph) {
 	}
 
   // Returns the travel time on edge e, given the flow x on e.
@@ -49,6 +47,6 @@ class ModifiedBprFunction {
 
 
  private:
-	const GraphT& graph; // The graph on whose edges we operate.
-	BprFunction<GraphT> bpr; // The original BPR function.
+	const Graph& graph; // The graph on whose edges we operate.
+	BprFunction bpr; // The original BPR function.
 };

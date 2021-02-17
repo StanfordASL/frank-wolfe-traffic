@@ -24,6 +24,11 @@ public:
 		Node s = lemonGraph.node(source);
 		Node t = lemonGraph.node(target);
 
+		//assert(source != target);
+
+		/*if (source == target)
+		  std::cout << "origin and destination are equal (" << source << "\n";*/
+
 		if (source != currentSource){
 			currentSource = source;
 
@@ -38,7 +43,7 @@ public:
 			path.push_front(lemonGraph.id(in_arc));
 		}
 
-		assert(!path.empty()); // Either the graph is not connect, origin is equal to destination	
+		//assert(!path.empty()); // Graph not connected!
 	}
 
 	void preprocess(){

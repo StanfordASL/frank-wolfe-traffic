@@ -21,6 +21,7 @@
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/SystemOptimum.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
+#include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
 #include "Algorithms/TrafficAssignment/FrankWolfeAssignment.h"
 #include "DataStructures/Graph/Graph.h"
 #include "DataStructures/Utilities/OriginDestination.h"
@@ -157,9 +158,9 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
 	const std::string func = clp.getValue<std::string>("f", "bpr");
 	if (func == "bpr")
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
-	/*else if (func == "modified_bpr")
+	else if (func == "modified_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
-		  else if (func == "custom_bpr")
+	/*	  else if (func == "custom_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
 	  else if (func == "approx_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);
