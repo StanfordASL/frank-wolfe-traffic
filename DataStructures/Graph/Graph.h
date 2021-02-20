@@ -17,7 +17,7 @@ class Graph
 {
 public:
 	// Constructs a graph from csv edge file
-	Graph(const std::string& filename) {
+	Graph(const std::string& filename, const double ceParameter) : vertexNum(0), ceParameter(ceParameter) {
 		vertexNum = 0;
 		readFrom(filename);
 	}
@@ -95,6 +95,11 @@ public:
 		return edgeWeight;
 	}
 
+	double combinedEquilibriumParameter()
+	{
+		return ceParameter;
+	}
+	
 private:
 	template <int numFields>
 	using CsvDialect = io::CSVReader<numFields>;
@@ -138,6 +143,8 @@ private:
 	std::vector<int> edgeSpeed; // travel time in free flow (k/h)
 	std::vector<double> edgeFreeTravelTime; // hours
 	std::vector<double> edgeWeight; // current travel time, in hours
+
+	double ceParameter; // paramter for combined equilibrium calculation
 };
 
 // Iteration macros for conveniently looping through vertices or edges of a graph.

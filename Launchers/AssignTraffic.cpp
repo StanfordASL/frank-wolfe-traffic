@@ -20,6 +20,7 @@
 #include "Algorithms/TrafficAssignment/Adapters/DijkstraAdapter.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/SystemOptimum.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
+#include "Algorithms/TrafficAssignment/ObjectiveFunctions/CombinedEquilibrium.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/BprFunction.h"
 #include "Algorithms/TrafficAssignment/TravelCostFunctions/ModifiedBprFunction.h"
 #include "Algorithms/TrafficAssignment/FrankWolfeAssignment.h"
@@ -29,22 +30,23 @@
 
 void printUsage() {
 	std::cout <<
-		"Usage: AssignTraffic [-f <func>] [-a <algo>] -i <file> -od <file> [-o <file>]\n"
+		"Usage: AssignTraffic [-obj <objective>] [-f <func>] [-a <algo>] [-n <num>] [-ce <num>] -i <file> -od <file> [-o <path>]  \n"
 		"This program assigns OD-pairs onto a network using the Frank-Wolfe method. It\n"
 		"supports different objectives, travel cost functions and shortest-path algos.\n"
-		"  -so               find the system optimum (default: user equilibrium)\n"
-		"  -v                display informative messages\n"
-		"  -n <num>          the number of iterations (0 means use stopping criterion)\n"
-		"  -f <func>         the travel cost function\n"
-		"                      possible values:\n"
-		"                        bpr (default) modified_bpr custom_bpr approx_bpr unaware_bpr\n"
-		"                        davidson modified_davidson inverse\n"
-		"  -a <algo>         the shortest-path algorithm\n"
-		"                      possible values: dijkstra (default)\n"
-		"  -i <path>         the input graph folder where the edge.csv file is found\n"
-		"  -od <file>        the OD-pairs to be assigned\n"
-		"  -o <path>         output path\n"
-		"  -help             display this help and exit\n";  
+		"  -obj				objective function:\n"
+		"						sys_opt (default), user_eq, combined_eq\n"
+		"  -f <func>		travel cost function:\n"
+		"						bpr (default) modified_bpr\n"
+		"  -a <algo>		shortest-path algorithm:\n"
+		"						dijkstra (default)\n"
+		"  -n <num>         number of iterations (default = 100)\n"
+		"  -ce_param <num>	combined_eq interpolation parameter in [0,1]:\n"
+		"					0 for UE, 1 for SO\n"
+		"  -i <path>        input graph edge CSV file\n"
+		"  -od <file>       OD-pair file\n"
+		"  -o <path>        output path\n"
+		"  -v               display informative messages\n"
+		"  -help            display this help and exit\n";  
 }
 
 
@@ -54,11 +56,12 @@ void assignTraffic(const CommandLineParser& clp) {
 	const std::string infilename = clp.getValue<std::string>("i");
 	const std::string odFilename = clp.getValue<std::string>("od");
 	const std::string outputPath = clp.getValue<std::string>("o");
-	
-	Graph graph(infilename);
 
-	if (mkdir(&outputPath[0],0777) != 0)
-		std::cout << "Could not create output folder\n";
+	const double ceParameter = clp.getValue<double>("ce_param", 0.0);
+	
+	Graph graph(infilename, ceParameter);
+
+	mkdir(&outputPath[0],0777); // create output folder
 	
 	const std::string patternFilename = outputPath + "/flow";
 	const std::string pathFilename = outputPath + "/paths";
@@ -80,7 +83,14 @@ void assignTraffic(const CommandLineParser& clp) {
 			throw std::invalid_argument("file cannot be opened -- '" + csvFilename + ".csv'");
 		csv << "# Input graph: " << infilename << "\n";
 		csv << "# OD-pairs: " << odFilename << "\n";
-		csv << "# Objective: " << (clp.isSet("so") ? "SO" : "UE") << "\n";
+
+		const std::string objectiveFunction = clp.getValue<std::string>("obj", "sys_opt");
+		
+		if (objectiveFunction == "combined_eq")
+			csv << "# Objective: " << objectiveFunction << "(" << ceParameter << ")\n";
+		else 
+			csv << "# Objective: " << objectiveFunction << "\n";
+		
 		csv << "# Function: " << clp.getValue<std::string>("f", "bpr") << "\n";
 		csv << "# Shortest-path algo: " << clp.getValue<std::string>("a", "dijkstra") << "\n";
 		csv << std::flush;
@@ -135,19 +145,8 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
 	if (algo == "dijkstra") {
 		using Assignment = FrankWolfeAssignment<ObjFunctionT, TravelCostFunction, DijkstraAdapter>;
 		assignTraffic<Assignment>(clp);
-	} /* else if (algo == "bidijkstra") {
-		using Assignment = FrankWolfeAssignment<
-			ObjFunctionT, TravelCostFunctionT, trafficassignment::BiDijkstraAdapter, Graph>;
-		assignTraffic<Assignment>(clp);
-	} else if (algo == "ch") {
-		using Assignment = FrankWolfeAssignment<
-			ObjFunctionT, TravelCostFunctionT, trafficassignment::CHAdapter, Graph>;
-		assignTraffic<Assignment>(clp);
-		} else if (algo == "cch") {
-		using Assignment = FrankWolfeAssignment<
-			ObjFunctionT, TravelCostFunctionT, trafficassignment::CCHAdapter, Graph>;
-			assignTraffic<Assignment>(clp);
-	} */ else {
+	}
+	else {
 		throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
 	}
 }
@@ -160,28 +159,20 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
 	else if (func == "modified_bpr")
 	  chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
-	/*	  else if (func == "custom_bpr")
-	  chooseShortestPathAlgo<ObjFunctionT, CustomBprFunction>(clp);
-	  else if (func == "approx_bpr")
-	  chooseShortestPathAlgo<ObjFunctionT, ApproxBprFunction>(clp);
-	  else if (func == "unaware_bpr")
-	  chooseShortestPathAlgo<ObjFunctionT, UnawareBprFunction>(clp);
-	  else if (func == "davidson")
-	  chooseShortestPathAlgo<ObjFunctionT, DavidsonFunction>(clp);
-	  else if (func == "modified_davidson")
-	  chooseShortestPathAlgo<ObjFunctionT, ModifiedDavidsonFunction>(clp);
-	  else if (func == "inverse")
-	  chooseShortestPathAlgo<ObjFunctionT, InverseFunction>(clp);*/
 	else
 		throw std::invalid_argument("unrecognized travel cost function -- '" + func + "'");
 }
 
 // Picks the objective function according to the command line options.
 void chooseObjFunction(const CommandLineParser& clp) {
-	if (clp.isSet("so"))
+	const std::string objectiveFunction = clp.getValue<std::string>("obj", "sys_opt");
+	
+	if (objectiveFunction == "sys_opt")
 		chooseTravelCostFunction<SystemOptimum>(clp);
-	else
+	else if (objectiveFunction == "user_eq")
 		chooseTravelCostFunction<UserEquilibrium>(clp);
+	else
+		chooseTravelCostFunction<CombinedEquilibrium>(clp);
 }
 
 int main(int argc, char* argv[]) {

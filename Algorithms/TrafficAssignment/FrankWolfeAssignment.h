@@ -35,7 +35,7 @@ public:
 		  trafficFlows(graph.numEdges()),
 		  pointOfSight(graph.numEdges()),
 		  travelCostFunction(graph),
-		  objFunction(travelCostFunction),
+		  objFunction(travelCostFunction, graph),
 		  csv(csv),
 		  patternFile(patternFile),
 		  pathFile(pathFile),
