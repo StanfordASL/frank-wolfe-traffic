@@ -18,6 +18,7 @@
 #include <routingkit/nested_dissection.h>
 
 #include "Algorithms/TrafficAssignment/Adapters/DijkstraAdapter.h"
+#include "Algorithms/TrafficAssignment/Adapters/ConstrainedAdapter.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/SystemOptimum.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/UserEquilibrium.h"
 #include "Algorithms/TrafficAssignment/ObjectiveFunctions/CombinedEquilibrium.h"
@@ -33,20 +34,21 @@ void printUsage() {
 		"Usage: AssignTraffic [-obj <objective>] [-f <func>] [-a <algo>] [-n <num>] [-ce <num>] -i <file> -od <file> [-o <path>]  \n"
 		"This program assigns OD-pairs onto a network using the Frank-Wolfe method. It\n"
 		"supports different objectives, travel cost functions and shortest-path algos.\n"
-		"  -obj				objective function:\n"
-		"						sys_opt (default), user_eq, combined_eq\n"
-		"  -f <func>		travel cost function:\n"
-		"						bpr (default) modified_bpr\n"
-		"  -a <algo>		shortest-path algorithm:\n"
-		"						dijkstra (default)\n"
-		"  -n <num>         number of iterations (default = 100)\n"
-		"  -ce_param <num>	combined_eq interpolation parameter in [0,1]:\n"
-		"					0 for UE, 1 for SO\n"
-		"  -i <path>        input graph edge CSV file\n"
-		"  -od <file>       OD-pair file\n"
-		"  -o <path>        output path\n"
-		"  -v               display informative messages\n"
-		"  -help            display this help and exit\n";  
+		"  -obj					objective function:\n"
+		"							sys_opt (default), user_eq, combined_eq\n"
+		"  -f <func>			travel cost function:\n"
+		"							bpr (default) modified_bpr\n"
+		"  -a <algo>			shortest-path algorithm:\n"
+		"							dijkstra (default) constrained\n"
+		"  -n <num>				number of iterations (default = 100)\n"
+		"  -ce_param <num>		combined_eq interpolation parameter in [0,1]:\n"
+		"						0 for UE, 1 for SO\n"
+		"  -const_param <num>	distance multiplier for constrained search"
+		"  -i <path>			input graph edge CSV file\n"
+		"  -od <file>			OD-pair file\n"
+		"  -o <path>			output path\n"
+		"  -v					display informative messages\n"
+		"  -help				display this help and exit\n";  
 }
 
 
@@ -58,8 +60,9 @@ void assignTraffic(const CommandLineParser& clp) {
 	const std::string outputPath = clp.getValue<std::string>("o");
 
 	const double ceParameter = clp.getValue<double>("ce_param", 0.0);
+	const double constParameter = clp.getValue<double>("const_param", 100.0);	
 	
-	Graph graph(infilename, ceParameter);
+	Graph graph(infilename, ceParameter, constParameter);
 
 	mkdir(&outputPath[0],0777); // create output folder
 	
@@ -146,6 +149,10 @@ void chooseShortestPathAlgo(const CommandLineParser& clp) {
 		using Assignment = FrankWolfeAssignment<ObjFunctionT, TravelCostFunction, DijkstraAdapter>;
 		assignTraffic<Assignment>(clp);
 	}
+	else if (algo == "constrained") {
+		using Assignment = FrankWolfeAssignment<ObjFunctionT, TravelCostFunction, ConstrainedAdapter>;
+		assignTraffic<Assignment>(clp);
+	}
 	else {
 		throw std::invalid_argument("unrecognized shortest-path algorithm -- '" + algo + "'");
 	}
@@ -158,7 +165,7 @@ void chooseTravelCostFunction(const CommandLineParser& clp) {
 	if (func == "bpr")
 		chooseShortestPathAlgo<ObjFunctionT, BprFunction>(clp);
 	else if (func == "modified_bpr")
-	  chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
+		chooseShortestPathAlgo<ObjFunctionT, ModifiedBprFunction>(clp);
 	else
 		throw std::invalid_argument("unrecognized travel cost function -- '" + func + "'");
 }

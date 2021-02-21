@@ -17,7 +17,7 @@ class Graph
 {
 public:
 	// Constructs a graph from csv edge file
-	Graph(const std::string& filename, const double ceParameter) : vertexNum(0), ceParameter(ceParameter) {
+	Graph(const std::string& filename, const double ceParameter, const double constParameter) : vertexNum(0), ceParameter(ceParameter), constParameter(constParameter) {
 		vertexNum = 0;
 		readFrom(filename);
 	}
@@ -99,6 +99,11 @@ public:
 	{
 		return ceParameter;
 	}
+
+	double noramlDistanceMultiplier()
+	{
+		return constParameter;
+	}
 	
 private:
 	template <int numFields>
@@ -144,7 +149,8 @@ private:
 	std::vector<double> edgeFreeTravelTime; // hours
 	std::vector<double> edgeWeight; // current travel time, in hours
 
-	double ceParameter; // paramter for combined equilibrium calculation
+	double ceParameter; // parameter for combined equilibrium calculation
+	double constParameter; // parameter for constrained search (normal distance multiplier) 
 };
 
 // Iteration macros for conveniently looping through vertices or edges of a graph.
