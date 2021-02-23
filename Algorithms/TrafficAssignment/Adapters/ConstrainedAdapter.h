@@ -42,7 +42,7 @@ typedef graph_traits<BoostGraph>::vertex_descriptor Vertex;
 // ResourceContainer model 
 struct ResourceContainer
 {
-	ResourceContainer(int c = 0, int t = 0) : time(c), distance(t) {}
+	ResourceContainer(int time = 0, int distance = 0) : time(time), distance(distance) {}
 	
     ResourceContainer& operator=(const ResourceContainer& other)
     {
@@ -106,7 +106,7 @@ public:
 class ConstrainedAdapter {
 public:
 	// Constructs a query algorithm instance working on the specified data.
-	explicit ConstrainedAdapter(Graph& graph) : graph(graph), weights(graph.getWeights()), dijkstra(lemonGraph, LengthMap(weights, lemonGraph)) /* dummy constructor; will be overidden */ , normalDistanceMultiplier(graph.noramlDistanceMultiplier()) { }	
+	explicit ConstrainedAdapter(Graph& graph) : graph(graph), weights(graph.getWeights()), lengthMap(edgeLengths, lemonGraph), dijkstra(lemonGraph, lengthMap), normalDistanceMultiplier(graph.noramlDistanceMultiplier()) { }
 	
 	// Computes shortest paths from source to target
 	void run(const int source_id, const int target_id, std::list<int>& path) {
@@ -122,8 +122,8 @@ public:
 		{
 			Node s = lemonGraph.node(source_id);
 			Node t = lemonGraph.node(target_id);
-
-			dijkstra.run(s, t);
+			
+			dijkstra.run(s,t);
 			
 			st_distance = dijkstra.dist(t);		
 			distances[st_pair] = st_distance;
@@ -157,7 +157,7 @@ public:
 				min_index = i;
 			}
 		}
-
+		
 		// extract path
 		for (int j = opt_solutions[min_index].size() - 1; j >= 0; --j)
 			path.push_back(edge_map[std::make_pair(source(opt_solutions[min_index][j], boostGraph), target(opt_solutions[min_index][j], boostGraph))]);
@@ -165,32 +165,11 @@ public:
 		// revert distance window for the target vertex
 		boostGraph[target_id].max_distance = std::numeric_limits<double>::max();
 	}
-
-	using LemonGraph = StaticDigraph;
-	using Node = LemonGraph::Node;
-	using Arc = LemonGraph::Arc;
-	using NodeIt = LemonGraph::NodeIt;
-	using ArcIt = LemonGraph::ArcIt;
-	
-	struct LengthMap 
-	{
-		typedef double Value;
-
-	LengthMap(std::vector<double>& lengths, LemonGraph& lg) : lengths(lengths), lg(lg) { }
-		
-		double operator[](Arc e) const
-			{
-				return lengths[lg.index(e)];
-			}
-
-		std::vector<double>& lengths;
-		LemonGraph& lg;
-	};
 	
 	void preprocess(){
 		// prepare distances map
 		std::vector<std::pair<int,int>> edges(graph.numEdges());
-		std::vector<double> edgeLengths(graph.numEdges());
+		edgeLengths = std::vector<double>(graph.numEdges());
 		
 		for (int e = 0; e < graph.numEdges(); ++e){
 			edges[e] = std::make_pair(graph.tail(e), graph.head(e));
@@ -198,10 +177,7 @@ public:
 		}
 		
 		lemonGraph.build(graph.numVertices(), edges.begin(), edges.end());
-		LengthMap lengthMap(edgeLengths, lemonGraph);
-		
 		dijkstra = Dijkstra<LemonGraph, LengthMap>(lemonGraph, lengthMap);
-		// dijkstra.lengthMap(lengthMap);
 	}
 
 	void customize(){
@@ -210,7 +186,7 @@ public:
 		
 		boost_vertices.clear();
 		for (int v = 0; v < graph.numVertices(); v++)
-			boost_vertices.push_back(add_vertex(VertProp(0, 0.0, std::numeric_limits<double>::max()), boostGraph));
+			boost_vertices.push_back(add_vertex(VertProp(v, 0.0, std::numeric_limits<double>::max()), boostGraph));
 		
 		for (int e = 0; e < graph.numEdges(); e++)
 		{
@@ -220,14 +196,42 @@ public:
 	}
 	
 private:
+	using LemonGraph = StaticDigraph;
+	using Node = LemonGraph::Node;
+	using Arc = LemonGraph::Arc;
+	using NodeIt = LemonGraph::NodeIt;
+	using ArcIt = LemonGraph::ArcIt;
+
+	template<typename Type>
+	using NodeMap = LemonGraph::NodeMap<Type>;
+
+	template<typename Type>
+	using ArcMap = LemonGraph::ArcMap<Type>;
+	
+	struct LengthMap 
+	{
+		typedef double Value;
+		LengthMap(std::vector<double>& lengths, LemonGraph& lg) : lengths(lengths), lg(lg) { }
+		
+		double operator[](Arc e) const
+		{
+			return lengths[lg.index(e)];
+		}
+
+		std::vector<double>& lengths;
+		LemonGraph& lg;
+	};
 
 	Graph& graph;									// Input graph
-	std::vector<double>& weights;				// Specifies edge travel time for search
+	std::vector<double>& weights;					// Specifies edge travel time for search
 	std::map<std::pair<int,int>,double> distances;	// Specifies normal distances used as constraints
 	BoostGraph boostGraph;							// Graph for constrained search
 	LemonGraph lemonGraph;							// Graph for computing the normal distance
+	LengthMap lengthMap;
 	Dijkstra<LemonGraph, LengthMap> dijkstra;		// Dijkstra search for normal distance
 	std::map<std::pair<int,int>,int> edge_map;		// Maps from pair edges to edge index
 	double normalDistanceMultiplier;
 	std::vector<double> boost_vertices;
+	std::vector<double> edgeLengths;
+	
 };

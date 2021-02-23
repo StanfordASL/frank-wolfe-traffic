@@ -178,8 +178,10 @@ void chooseObjFunction(const CommandLineParser& clp) {
 		chooseTravelCostFunction<SystemOptimum>(clp);
 	else if (objectiveFunction == "user_eq")
 		chooseTravelCostFunction<UserEquilibrium>(clp);
-	else
+	else if (objectiveFunction == "combined_eq")
 		chooseTravelCostFunction<CombinedEquilibrium>(clp);
+	else
+		throw std::invalid_argument("unrecognized objective function -- '" + objectiveFunction + "'");	
 }
 
 int main(int argc, char* argv[]) {

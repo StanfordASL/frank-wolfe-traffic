@@ -11,7 +11,8 @@ ccflags = (
   '-Wno-missing-braces -Wno-unknown-pragmas -Wno-strict-overflow -Wno-sign-compare ')
 
 # Additional compiler options per build variant.
-debug = '-O0 -g '
+#debug = '-O0 -g'
+debug = '-O0 -g -enable-checking'
 devel = '-O3 '
 release = '-O3 -DNDEBUG '
 
