@@ -1,6 +1,6 @@
-# Modified Routing Framework
+# Frank-Wolfe for Traffic Assignment
 
-This repository contains C++14 implementation for congestion-aware traffic assignment (TA) and autonmous mobility-on-demand routing (AMoD). The code is based on the repository [Routing Framework](https://github.com/vbuchhold/routing-framework). The main additions that are provided in the current repository include the following:
+This repository contains C++14 implementation for congestion-aware traffic assignment (TA) and autonmous mobility-on-demand routing (AMoD) using the Frank-Wolfe algorithm. The code is based on the repository [Routing Framework](https://github.com/vbuchhold/routing-framework). The main additions that are provided in the current repository include the following:
 
 * Support for computing rebalancing flows for autonomous mobility-on-demand routing (AMoD), as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
 
