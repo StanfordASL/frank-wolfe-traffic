@@ -108,6 +108,7 @@ public:
 	// Constructs a query algorithm instance working on the specified data.
 	explicit ConstrainedAdapter(Graph& graph) : graph(graph), weights(graph.getWeights()), lengthMap(edgeLengths, lemonGraph), dijkstra(lemonGraph, lengthMap), normalDistanceMultiplier(graph.noramlDistanceMultiplier()) { }
 	
+	
 	// Computes shortest paths from source to target
 	void run(const int source_id, const int target_id, std::list<int>& path) {
 		path.clear();

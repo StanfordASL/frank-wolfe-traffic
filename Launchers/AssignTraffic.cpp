@@ -28,6 +28,7 @@
 #include "DataStructures/Graph/Graph.h"
 #include "DataStructures/Utilities/OriginDestination.h"
 #include "Tools/CommandLine/CommandLineParser.h"
+#include "Tools/Timer.h"
 
 void printUsage() {
 	std::cout <<
@@ -60,7 +61,19 @@ void assignTraffic(const CommandLineParser& clp) {
 	const std::string outputPath = clp.getValue<std::string>("o");
 
 	const double ceParameter = clp.getValue<double>("ce_param", 0.0);
-	const double constParameter = clp.getValue<double>("const_param", 100.0);	
+	if (ceParameter < 0 || ceParameter > 1)
+	{
+		const std::string msg("composite equilibrium parameter must be in range [0,1]");
+		throw std::invalid_argument(msg + " -- " + std::to_string(ceParameter));
+	}
+	
+	const double constParameter = clp.getValue<double>("const_param", 100.0);
+	if (constParameter < 1)
+	{
+		const std::string msg("constrained parameter must be greater than 1");
+		throw std::invalid_argument(msg + " -- " + std::to_string(constParameter));
+	}
+	
 	
 	Graph graph(infilename, ceParameter, constParameter);
 
@@ -95,7 +108,12 @@ void assignTraffic(const CommandLineParser& clp) {
 			csv << "# Objective: " << objectiveFunction << "\n";
 		
 		csv << "# Function: " << clp.getValue<std::string>("f", "bpr") << "\n";
-		csv << "# Shortest-path algo: " << clp.getValue<std::string>("a", "dijkstra") << "\n";
+
+		const std::string algorithm = clp.getValue<std::string>("a", "dijkstra");
+		if (algorithm == "constrained")
+			csv << "# Shortest-path algo: " << algorithm  << "(" << constParameter << ")\n";
+		else
+			csv << "# Shortest-path algo: " << algorithm << "\n";
 		csv << std::flush;
 	}
 	
@@ -138,7 +156,12 @@ void assignTraffic(const CommandLineParser& clp) {
 		csv << std::flush;
 	}
 
+	Timer timer;
+
 	assign.run(numIterations);
+
+	if (csv.is_open())
+		csv << "Total time:," << timer.elapsed() << std::flush; 
 }
 
 // Picks the shortest-path algorithm according to the command line options.
