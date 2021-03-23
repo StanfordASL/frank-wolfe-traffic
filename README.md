@@ -2,7 +2,13 @@
 
 This repository contains C++14 implementation for congestion-aware traffic assignment (TA) and autonmous mobility-on-demand routing (AMoD) using the Frank-Wolfe algorithm. The code is based on the repository [Routing Framework](https://github.com/vbuchhold/routing-framework). The main additions that are provided in the current repository include the following:
 
-* Support for computing rebalancing flows for autonomous mobility-on-demand routing (AMoD), as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
+* Computation of rebalancing flows for autonomous mobility-on-demand routing (AMoD), as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
+
+* Computation of Interpolated Traffic Assignment (I-TAP), which balance fairness and efficiencity, as described in Jalota, Solovey, Zoepf, and Pavone: “Who Gets What and Why? A Fast Method to Balance Efficiency and Fairness in Traffic Routing”, *ArXiv*, 2021.
+
+* Computation of Constrained System Optimum (CSO), which balance fairness and efficiencity, as described in Jahn, Möhring, Schulz, and Stier-Moses: “System-Optimal Routing of Traffic Flows with User Constraints in Networks with Congestion“, *Operations Research*, 2005.
+
+* Path-based solution representations.
 
 * Batched OD-pairs that specify the number of passengers travelling between every origin-destination, rather than having exactly one passenger for each pair.
 
