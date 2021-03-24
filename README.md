@@ -4,7 +4,7 @@ This repository contains C++14 implementation for congestion-aware traffic assig
 
 * Computation of rebalancing flows for autonomous mobility-on-demand routing (AMoD), as described in Solovey, Salazar, and Pavone: “Scalable and Congestion-aware Routing for Autonomous Mobility-on-Demand via Frank-Wolfe Optimization”, in *Robotics: Science and Systems*, 2019.
 
-* Computation of Interpolated Traffic Assignment (I-TAP), which balance fairness and efficiencity, as described in Jalota, Solovey, Zoepf, and Pavone: “Who Gets What and Why? A Fast Method to Balance Efficiency and Fairness in Traffic Routing”, *ArXiv*, 2021.
+* Computation of Interpolated Traffic Assignment (I-TAP), which balance fairness and efficiencity, as described in Jalota, Solovey, Zoepf, and Pavone: “Who Gets What and Why? A Fast Method to Balance Efficiency and Fairness in Traffic Routing”, *ArXiv*, 2021. Additional code can be found in [git:fair-routing](https://github.com/StanfordASL/fair-routing).
 
 * Computation of Constrained System Optimum (CSO), which balance fairness and efficiencity, as described in Jahn, Möhring, Schulz, and Stier-Moses: “System-Optimal Routing of Traffic Flows with User Constraints in Networks with Congestion“, *Operations Research*, 2005.
 
