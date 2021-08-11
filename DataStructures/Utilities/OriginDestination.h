@@ -28,29 +28,27 @@ struct OriginDestination {
 // Zones or traffic cells represent for example residential or commercial areas.
 struct ClusteredOriginDestination : public OriginDestination {
 	// Constructs a clustered OD-pair from o to d.
-	ClusteredOriginDestination(const int o, const int d, const int oZone, const int dZone, const int v)
-		: OriginDestination(o, d, v), originZone(oZone), destinationZone(dZone) {}
+	ClusteredOriginDestination(const int o, const int d, const int r, const int e1, const int e2, const int v)
+		: OriginDestination(o, d, v), rebalancer(r), edge1(e1), edge2(e2) {}
 
 	// Compares this clustered OD-pair with rhs lexicographically.
 	bool operator<(const ClusteredOriginDestination& rhs) const {
-		if (originZone < rhs.originZone)
+		if (edge1 < rhs.edge1)
 			return true;
-		if (originZone > rhs.originZone)
+		if (edge1 > rhs.edge1)
 			return false;
-		if (destinationZone < rhs.destinationZone)
+		if (edge2 < rhs.edge2)
 			return true;
-		if (destinationZone > rhs.destinationZone)
+		if (edge2  > rhs.edge2)
+			return false;
+		if (rebalancer < rhs.rebalancer)
+			return true;
+		if (rebalancer  > rhs.rebalancer)
 			return false;
 		return OriginDestination::operator<(rhs);
 	}
-
-	// Returns true if the OD-pair has the same origin and destination zone as the specified one.
-	bool hasSameZones(const ClusteredOriginDestination& other) const {
-		return originZone == other.originZone && destinationZone == other.destinationZone;
-	}
-
-	int originZone;
-	int destinationZone;
+	
+	int rebalancer, edge1, edge2;
 };
 
 // Reads the specified file into a vector of OD-pairs.
@@ -75,18 +73,18 @@ std::vector<OriginDestination> importODPairsFrom(const std::string& infile) {
 // Reads the specified file into a vector of clustered OD-pairs.
 std::vector<ClusteredOriginDestination> importClusteredODPairsFrom(const std::string& infile) {
 	std::vector<ClusteredOriginDestination> pairs;
-	int origin, destination, volume, originZone = INVALID_ID, destinationZone = INVALID_ID;
+	int origin, destination, volume, edge1 = INVALID_ID, edge2 = INVALID_ID, rebalancer = INVALID_ID;
 	using TrimPolicy = io::trim_chars<>;
 	using QuotePolicy = io::no_quote_escape<','>;
 	using OverflowPolicy = io::throw_on_overflow;
 	using CommentPolicy = io::single_line_comment<'#'>;
-	io::CSVReader<5, TrimPolicy, QuotePolicy, OverflowPolicy, CommentPolicy> in(infile);
+	io::CSVReader<6, TrimPolicy, QuotePolicy, OverflowPolicy, CommentPolicy> in(infile);
 	const io::ignore_column ignore = io::ignore_extra_column | io::ignore_missing_column;
-	in.read_header(ignore, "origin", "destination", "origin_zone", "destination_zone", "volume");
-	while (in.read_row(origin, destination, originZone, destinationZone, volume)) {
+	in.read_header(ignore, "origin", "destination", "rebalancer", "edge1", "edge2", "volume");
+	while (in.read_row(origin, destination, rebalancer, edge1, edge2, volume)) {
 		assert(origin >= 0);
 		assert(destination >= 0);
-		pairs.emplace_back(origin, destination, originZone, destinationZone, volume);
+		pairs.emplace_back(origin, destination, rebalancer, edge1, edge2, volume);
 	}
 	return pairs;
 }

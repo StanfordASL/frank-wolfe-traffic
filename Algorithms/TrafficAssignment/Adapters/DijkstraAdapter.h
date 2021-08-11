@@ -18,7 +18,7 @@ public:
 											 dijkstra(lemonGraph, weightMap){ }
 
 	// Computes shortest paths from each source to its target simultaneously.
-	void run(const int source, const int target, std::list<int>& path) {
+	double run(const int source, const int target, std::list<int>& path) {
 		path.clear();
 
 		Node s = lemonGraph.node(source);
@@ -43,6 +43,8 @@ public:
 			path.push_front(lemonGraph.id(in_arc));
 		}
 
+		return dijkstra.dist(t);
+
 		//assert(!path.empty()); // Graph not connected!
 	}
 
@@ -58,7 +60,7 @@ public:
 		dijkstra.lengthMap(weightMap);
 		currentSource = 0;
 		dijkstra.run(lemonGraph.node(currentSource));
-	}
+	}	
 	
 private:
 	using LemonGraph = StaticDigraph;

@@ -7,20 +7,12 @@
 # small: Anaheim Braess Friedrichshain Massachusetts MitteCenter Mitte-Prenzlauerberg-Friedrichshain-Center PrenzlauerbergCenter Tiergarten SiouxFalls Pigou
 #medium: Berlin-Center Chicago NewYork
 
-locations=../Differential_Pricing/Locations/
-results=../Differential_Pricing/Results/test/
-exe=Build/Release/Launchers/./AssignTraffic
+locations=../Differential_Pricing/Locations/Elastic_small
+results=../Differential_Pricing/Results/Elastic_small
+exe=Build/Debug/Launchers/./AssignTraffic
 
 #
 #for city in Chicago NewYork
-for city in SiouxFalls
-do
-	echo "running $city"
-	for (( i=0; i <= 100; i++ ))
-	do
-		alpha=$(echo "0 + ( 0.01 * $i )" | bc)
-		$exe -n 100 -i $locations/$city/edges.csv -od $locations/$city/od.csv -o $results/$city/2
-	done 
-done
+$exe -n 100 -elastic -f modified_bpr -i $locations/edges.csv -od $locations/od.csv -o $results/
 
 #for i in */; do zip -r "${i%/}.zip" "$i"; done

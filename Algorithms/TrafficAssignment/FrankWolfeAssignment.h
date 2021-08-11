@@ -29,8 +29,8 @@ class FrankWolfeAssignment {
 public:
 
 	// Constructs an assignment procedure based on the Frank-Wolfe method.
-	FrankWolfeAssignment(Graph& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true)
-		: allOrNothingAssignment(graph, odPairs, verbose),
+	FrankWolfeAssignment(Graph& graph, const std::vector<ClusteredOriginDestination>& odPairs, std::ofstream& csv, std::ofstream& patternFile, std::ofstream& pathFile, std::ofstream& weightFile, const bool verbose = true, const bool elasticRebalance = false)
+		: allOrNothingAssignment(graph, odPairs, verbose, elasticRebalance),
 		  graph(graph),	
 		  trafficFlows(graph.numEdges()),
 		  pointOfSight(graph.numEdges()),

@@ -74,7 +74,6 @@ public:
 		return edgeWeight[e];
 	}
 	
-		
 	// Returns the travel time of edge e at free flow.
 	double freeTravelTime(const int e) const {
 		assert(e >= 0);
@@ -125,9 +124,9 @@ private:
 
 			assert(tail >= 0);
 			assert(head >= 0);
-			assert(capacity > 0);
-			assert(length > 0);
-			assert(speed > 0);
+			assert(capacity >= 0);
+			assert(length >= 0);
+			assert(speed >= 0);
 
 			// update vertex number
 			if (tail + 1 > vertexNum || head + 1 > vertexNum)

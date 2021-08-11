@@ -35,7 +35,7 @@ void printUsage() {
 		"Usage: AssignTraffic [-obj <objective>] [-f <func>] [-a <algo>] [-n <num>] [-ce <num>] -i <file> -od <file> [-o <path>]  \n"
 		"This program assigns OD-pairs onto a network using the Frank-Wolfe method. It\n"
 		"supports different objectives, travel cost functions and shortest-path algos.\n"
-		"  -obj					objective function:\n"
+		"  -obj	<objective>		objective function:\n"
 		"							sys_opt (default), user_eq, combined_eq\n"
 		"  -f <func>			travel cost function:\n"
 		"							bpr (default) modified_bpr\n"
@@ -45,6 +45,7 @@ void printUsage() {
 		"  -ce_param <num>		combined_eq interpolation parameter in [0,1]:\n"
 		"						0 for UE, 1 for SO\n"
 		"  -const_param <num>	distance multiplier for constrained search"
+		"  -elastic				flag for elastic demand with rebalancing"
 		"  -i <path>			input graph edge CSV file\n"
 		"  -od <file>			OD-pair file\n"
 		"  -o <path>			output path\n"
@@ -147,7 +148,7 @@ void assignTraffic(const CommandLineParser& clp) {
 		weightFile << "numIteration,weight\n";
 	}
 
-	FrankWolfeAssignmentT assign(graph, odPairs, csv, patternFile, pathFile, weightFile, clp.isSet("v"));
+	FrankWolfeAssignmentT assign(graph, odPairs, csv, patternFile, pathFile, weightFile, clp.isSet("v"), clp.isSet("elastic"));
 
 	if (csv.is_open()) {
 		csv << "# Preprocessing time: " << assign.stats.totalRunningTime << "ms\n";

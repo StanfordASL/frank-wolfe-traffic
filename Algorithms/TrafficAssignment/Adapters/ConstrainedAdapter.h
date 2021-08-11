@@ -110,7 +110,7 @@ public:
 	
 	
 	// Computes shortest paths from source to target
-	void run(const int source_id, const int target_id, std::list<int>& path) {
+	double run(const int source_id, const int target_id, std::list<int>& path) {
 		path.clear();
 
 		double st_distance;
@@ -165,6 +165,8 @@ public:
 
 		// revert distance window for the target vertex
 		boostGraph[target_id].max_distance = std::numeric_limits<double>::max();
+
+		return 0;
 	}
 	
 	void preprocess(){
